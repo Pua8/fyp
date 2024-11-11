@@ -1,0 +1,12 @@
+{
+    "configurations": [
+      {
+        "name": "Flutter Emulator",
+        "program": "lib/main.dart",
+        "request": "launch",
+        "type": "dart",
+        "deviceId": "emulator-5554"  // Replace with your emulator's ID
+      }
+    ]
+  }
+  
