@@ -25,11 +25,31 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       _isLoading = true;
     });
     try {
-      await _auth.sendPasswordResetEmail(email: _emailController.text.trim());
-      showToast(message: "Password reset email sent!");
-      Navigator.pop(context); // Go back to the previous screen
+      // Check if the email exists in Firebase
+      List<String> signInMethods = await _auth.fetchSignInMethodsForEmail(
+        _emailController.text.trim(),
+      );
+
+      if (signInMethods.isEmpty) {
+        // If the email does not exist
+        showToast(message: "Email does not exist in our records.");
+      } else {
+        // If the email exists, send the reset password email
+        await _auth.sendPasswordResetEmail(email: _emailController.text.trim());
+        showToast(message: "Password reset email sent! Check your inbox.");
+        Navigator.pop(context); // Go back to the previous screen
+      }
+    } on FirebaseAuthException catch (e) {
+      // Check for specific error codes to customize the message
+      String errorMessage;
+      if (e.code == 'invalid-email') {
+        errorMessage = "The email address is badly formatted.";
+      } else {
+        errorMessage = e.message ?? "An unknown error occurred.";
+      }
+      showToast(message: "Error: $errorMessage");
     } catch (e) {
-      showToast(message: "Error: ${e.toString()}");
+      showToast(message: "An error occurred. Please try again.");
     }
     setState(() {
       _isLoading = false;
@@ -39,6 +59,12 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -52,41 +78,35 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             Text(
               "Reset Password",
               style: TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white),
+                fontSize: 30,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
-            SizedBox(
-              height: 30,
-            ),
+            SizedBox(height: 30),
             Text(
               "Enter your email to reset your password",
-              style: TextStyle(
-                  fontSize: 18, color: Colors.white), // Set title color
+              style: TextStyle(fontSize: 18, color: Colors.white),
             ),
             SizedBox(height: 20),
             TextField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
-
-              // Set input text color and hint style
-              style: TextStyle(color: Colors.white), // Text color
+              style: TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 prefixIcon: Icon(Icons.person, color: Colors.white),
                 labelText: "Email",
-                labelStyle: TextStyle(color: Colors.white), // Label text color
+                labelStyle: TextStyle(color: Colors.white),
                 hintText: "Enter your email",
-                hintStyle: TextStyle(color: Colors.white70), // Hint text color
+                hintStyle: TextStyle(color: Colors.white70),
                 border: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white), // Border color
+                  borderSide: BorderSide(color: Colors.white),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderSide:
-                      BorderSide(color: Colors.white), // Enabled border color
+                  borderSide: BorderSide(color: Colors.white),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(
-                      color: Colors.blueAccent), // Focused border color
+                  borderSide: BorderSide(color: Colors.blueAccent),
                 ),
               ),
             ),
