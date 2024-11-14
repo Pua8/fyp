@@ -68,7 +68,6 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Reset Password"),
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
           onPressed: () {
@@ -81,6 +80,21 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Image.asset(
+              'lib/Features/User_Auth/Presentation/images/logo.png',
+              width: 100,
+              height: 150,
+            ),
+            Text(
+              "Reset password",
+              style: TextStyle(
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white),
+            ),
+            SizedBox(
+              height: 30,
+            ),
             TextField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
@@ -91,7 +105,8 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                   color: Colors.white, // Icon color
                 ),
                 labelText: "Enter your email",
-                labelStyle: TextStyle(color: Colors.white60), // Label text color
+                labelStyle:
+                    TextStyle(color: Colors.white60), // Label text color
                 border: OutlineInputBorder(
                   borderSide: BorderSide(color: Colors.white), // Border color
                 ),

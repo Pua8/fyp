@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fyp/Features/User_Auth/firebase_auth_implementation/firebase_auth_services.dart';
 import 'package:fyp/Features/User_Auth/Presentation/Pages/login.dart';
-import 'package:fyp/Features/User_Auth/Presentation/widgets/form_container_widget.dart';
 import 'package:fyp/global/common/toast.dart';
 
 class SignUpPage extends StatefulWidget {
@@ -19,14 +18,45 @@ class _SignUpPageState extends State<SignUpPage> {
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
 
   bool isSigningUp = false;
+  bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
+  String? passwordError;
+
+  @override
+  void initState() {
+    super.initState();
+    _passwordController.addListener(_validatePassword);
+    _confirmPasswordController.addListener(_validatePasswordMatch);
+  }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  void _validatePassword() {
+    final password = _passwordController.text.trim();
+    setState(() {
+      passwordError = validatePassword(password)
+          ? null
+          : "Password must:\n- Be at least 8 characters long\n- Contain at least one uppercase letter\n- Contain at least one digit\n- Contain at least one special character";
+    });
+  }
+
+  void _validatePasswordMatch() {
+    if (_confirmPasswordController.text.trim() != _passwordController.text.trim()) {
+      setState(() {
+        passwordError = "Passwords do not match";
+      });
+    } else {
+      _validatePassword();
+    }
   }
 
   @override
@@ -52,16 +82,101 @@ class _SignUpPageState extends State<SignUpPage> {
                 ),
               ),
               SizedBox(height: 30),
-              FormContainerWidget(
+              // Email Field
+              TextField(
                 controller: _emailController,
-                hintText: "Email",
-                isPasswordField: false,
+                keyboardType: TextInputType.emailAddress,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.email, color: Colors.white),
+                  labelText: "Email",
+                  labelStyle: TextStyle(color: Colors.white60),
+                  border: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white),
+                  ),
+                ),
               ),
-              SizedBox(height: 10),
-              FormContainerWidget(
+              SizedBox(height: 20),
+              // Password Field
+              TextField(
                 controller: _passwordController,
-                hintText: "Password",
-                isPasswordField: true,
+                obscureText: !_isPasswordVisible,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.lock, color: Colors.white),
+                  labelText: "Password",
+                  labelStyle: const TextStyle(color: Colors.white60),
+                  border: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white),
+                  ),
+                  enabledBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white),
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.white,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isPasswordVisible = !_isPasswordVisible;
+                      });
+                    },
+                  ),
+                ),
+              ),
+              if (passwordError != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Text(
+                    passwordError!,
+                    style: TextStyle(
+                      color: Colors.redAccent,
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.start,
+                  ),
+                ),
+              SizedBox(height: 20),
+              // Confirm Password Field
+              TextField(
+                controller: _confirmPasswordController,
+                obscureText: !_isConfirmPasswordVisible,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.lock, color: Colors.white),
+                  labelText: "Confirm Password",
+                  labelStyle: const TextStyle(color: Colors.white60),
+                  border: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white),
+                  ),
+                  enabledBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white),
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isConfirmPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.white,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                      });
+                    },
+                  ),
+                ),
               ),
               SizedBox(height: 30),
               GestureDetector(
@@ -120,14 +235,42 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
-  // Sign-up function with Firestore integration
   void _signUp() async {
     setState(() {
       isSigningUp = true;
+      passwordError = null;
     });
 
-    String email = _emailController.text.trim();
-    String password = _passwordController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+
+    // Validate that all fields are filled
+    if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+      showToast(message: "All fields are mandatory.");
+      setState(() {
+        isSigningUp = false;
+      });
+      return;
+    }
+
+    // Password validation
+    if (password != confirmPassword) {
+      showToast(message: "Passwords do not match.");
+      setState(() {
+        isSigningUp = false;
+      });
+      return;
+    }
+
+    // Check if password meets requirements
+    if (!validatePassword(password)) {
+      setState(() {
+        passwordError = "Password must:\n- Be at least 8 characters long\n- Contain at least one uppercase letter\n- Contain at least one digit\n- Contain at least one special character";
+        isSigningUp = false;
+      });
+      return;
+    }
 
     try {
       // Register user in Firebase Authentication
@@ -152,5 +295,12 @@ class _SignUpPageState extends State<SignUpPage> {
         isSigningUp = false;
       });
     }
+  }
+
+  bool validatePassword(String password) {
+    RegExp passwordRegExp = RegExp(
+      r'^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&^#_-]).{8,}$',
+    );
+    return passwordRegExp.hasMatch(password);
   }
 }
