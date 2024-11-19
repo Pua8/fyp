@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fyp/Features/User_Auth/Presentation/Pages/user_profile.dart';
+import 'package:fyp/Features/User_Auth/Presentation/Widgets/carousel.dart'; // Import the CarouselWidget
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -36,21 +37,20 @@ class HomePage extends StatelessWidget {
           ),
         ],
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              "Welcome to the Home Page!",
-              style: TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
+      body: Column(
+        children: [
+          const SizedBox(height: 25),
+          Text(
+            "BangunLah wishing you a safe trip!",
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
-            const SizedBox(height: 20),
-          ],
-        ),
+          ),
+          const SizedBox(height: 15),
+          const CarouselWidget(),
+        ],
       ),
     );
   }
