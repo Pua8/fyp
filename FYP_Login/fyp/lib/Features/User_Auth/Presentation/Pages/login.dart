@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fyp/Features/User_Auth/Presentation/Pages/sign_up_page.dart';
 import 'package:fyp/global/common/toast.dart';
-import 'package:fyp/Features/User_Auth/Presentation/widgets/form_container_widget.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:fyp/Features/User_Auth/firebase_auth_implementation/firebase_auth_services.dart';
