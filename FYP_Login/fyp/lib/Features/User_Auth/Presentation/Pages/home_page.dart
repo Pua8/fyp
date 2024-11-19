@@ -1,13 +1,10 @@
-//import 'dart:ffi';
-
 import 'package:flutter/material.dart';
 import 'package:fyp/Features/User_Auth/Presentation/Pages/user_profile.dart';
-//import 'package:fyp/global/common/toast.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
-  // Sign-out function
+  // Navigate to the Profile Page
   void ProfilePage(BuildContext context) async {
     Navigator.push(
       context,
@@ -20,13 +17,15 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text(
-          "BangunLah",
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context); // Navigate back to the previous screen
+          },
+        ),
+        title: Image.asset(
+          'lib/Features/User_Auth/Presentation/images/logo.png',
+          height: 50,
         ),
         centerTitle: true,
         backgroundColor: Colors.grey[900],
@@ -34,7 +33,7 @@ class HomePage extends StatelessWidget {
           IconButton(
             onPressed: () => ProfilePage(context),
             icon: const Icon(Icons.person),
-          )
+          ),
         ],
       ),
       body: Center(
