@@ -5,6 +5,8 @@ import 'package:fyp/Features/App/Splash_Screen/splash_screen.dart';
 import 'package:fyp/Features/User_Auth/Presentation/Pages/login.dart';
 import 'package:fyp/Features/User_Auth/Presentation/Pages/sign_up_page.dart';
 import 'package:fyp/Features/User_Auth/Presentation/Pages/home_page.dart';
+import 'package:fyp/Features/User_Auth/Presentation/Pages/reset_password.dart';
+
 
 Future main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -47,6 +49,7 @@ class MyApp extends StatelessWidget {
         '/login': (context) => LoginPage(),
         '/signUp': (context) => SignUpPage(),
         '/home': (context) => HomePage(),
+        '/reset_password': (context) => ResetPasswordPage(),
       },
     );
   }

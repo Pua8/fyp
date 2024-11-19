@@ -433,6 +433,41 @@ class _ProfilePageState extends State<UserProfile> {
                   onPressed: () => editRace('race'),
                 ),
 
+                // Reset Password Button
+                const SizedBox(height: 20),
+                Center(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // Navigate to the Reset Password screen
+                      Navigator.of(context).pushReplacementNamed('/reset_password');
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          Colors.grey[900], // Background grey (900)
+                      side: const BorderSide(
+                        color: Colors.red, // Red border
+                        width: 2, // Border thickness
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(8), // Rounded corners
+                      ),
+                    ),
+                    child: const Text(
+                      'Reset Password',
+                      style: TextStyle(
+                        color: Colors.red, // Font color red
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+
                 // Logout Button
                 const SizedBox(height: 20),
                 Center(

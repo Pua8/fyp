@@ -50,6 +50,42 @@ class HomePage extends StatelessWidget {
           ),
           const SizedBox(height: 15),
           const CarouselWidget(),
+          const SizedBox(height: 100),
+          
+          // Container with border behind the button
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(
+                color: Colors.white,
+              ),
+            ),
+            child: TextButton(
+              onPressed: () {
+                // Add functionality for the Start Driving button
+              },
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.directions_car,
+                    color: Colors.white,
+                    size: 60,
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'Start Driving',
+                    style: TextStyle(
+                      fontSize: 25,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );

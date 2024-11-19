@@ -75,7 +75,7 @@ class _CarouselWidgetState extends State<CarouselWidget> {
           onHorizontalDragStart: (_) => _stopAutoScroll(), // Stop on drag start
           onHorizontalDragEnd: (_) => _startAutoScroll(),  // Resume on drag end
           child: SizedBox(
-            height: 220,
+            height: 300,
             child: PageView.builder(
               controller: _pageController,
               itemCount: tips.length,
