@@ -24,12 +24,10 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: Text(
-          "Welcome To Flutter Firebase",
-          style: TextStyle(
-            color: Colors.blue,
-            fontWeight: FontWeight.bold,
-          ),
+        child: Image.asset(
+          'lib/Features/User_Auth/Presentation/images/logo.png', // Path to your logo image
+          width: 250, // Adjust width as needed
+          height: 250, // Adjust height as needed
         ),
       ),
     );

@@ -3,10 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fyp/Features/User_Auth/Presentation/Pages/sign_up_page.dart';
 import 'package:fyp/global/common/toast.dart';
-import 'package:fyp/Features/User_Auth/Presentation/widgets/form_container_widget.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:fyp/Features/User_Auth/firebase_auth_implementation/firebase_auth_services.dart';
+import 'reset_password.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -21,6 +21,7 @@ class _LoginPageState extends State<LoginPage> {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _isPasswordVisible = false;
 
   @override
   void dispose() {
@@ -32,39 +33,120 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: Text("Login"),
-      ),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 15),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              Image.asset(
+                'lib/Features/User_Auth/Presentation/images/logo.png',
+                width: 100,
+                height: 150,
+              ),
               Text(
                 "Login",
-                style: TextStyle(fontSize: 27, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white),
               ),
               SizedBox(
                 height: 30,
               ),
-              FormContainerWidget(
+              TextField(
                 controller: _emailController,
-                hintText: "Email",
-                isPasswordField: false,
+                keyboardType: TextInputType.emailAddress,
+                style: const TextStyle(color: Colors.white), // Text input color
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(
+                    Icons.email, // Change this to your desired icon
+                    color: Colors.white, // Icon color
+                  ),
+                  labelText: "Email",
+                  labelStyle:
+                      TextStyle(color: Colors.white60), // Label text color
+                  border: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white), // Border color
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(
+                        color: Colors.white), // Border color when enabled
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(
+                        color: Colors.white), // Border color when focused
+                  ),
+                ),
+              ),
+              SizedBox(
+                height: 20,
+              ),
+              TextField(
+                controller: _passwordController,
+                obscureText:
+                    !_isPasswordVisible, // This controls whether the password is hidden
+                style: const TextStyle(color: Colors.white), // Text input color
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(
+                    Icons.lock, // Icon for password
+                    color: Colors.white, // Icon color
+                  ),
+                  labelText: "Password",
+                  labelStyle: const TextStyle(
+                      color: Colors.white60), // Label text color
+                  border: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white), // Border color
+                  ),
+                  enabledBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(
+                        color: Colors.white), // Border color when enabled
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(
+                        color: Colors.white), // Border color when focused
+                  ),
+                  // Toggle password visibility icon
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isPasswordVisible
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      color: Colors.white, // Icon color for visibility toggle
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isPasswordVisible =
+                            !_isPasswordVisible; // Toggle the visibility
+                      });
+                    },
+                  ),
+                ),
               ),
               SizedBox(
                 height: 10,
               ),
-              FormContainerWidget(
-                controller: _passwordController,
-                hintText: "Password",
-                isPasswordField: true,
+              // Forgot Password
+              Align(
+                alignment: Alignment.centerLeft,
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => ResetPasswordPage()),
+                    );
+                  },
+                  child: Text(
+                    "Forgot Password?",
+                    style: TextStyle(
+                      color: Colors.white60, // Light gray color
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
               ),
-              SizedBox(
-                height: 30,
-              ),
+              SizedBox(height: 30),
               GestureDetector(
                 onTap: () {
                   _signIn();
@@ -134,9 +216,12 @@ class _LoginPageState extends State<LoginPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text("Don't have an account?"),
+                  Text(
+                    "Don't have an account?",
+                    style: TextStyle(color: Colors.white),
+                  ),
                   SizedBox(
-                    width: 5,
+                    width: 15,
                   ),
                   GestureDetector(
                     onTap: () {
@@ -181,7 +266,7 @@ class _LoginPageState extends State<LoginPage> {
       showToast(message: "User is successfully signed in");
       Navigator.pushNamed(context, "/home");
     } else {
-      showToast(message: "some error occured");
+      //showToast(message: "some error occured");
     }
   }
 
@@ -207,7 +292,7 @@ class _LoginPageState extends State<LoginPage> {
         Navigator.pushNamed(context, "/home");
       }
     } catch (e) {
-      showToast(message: "some error occured $e");
+      //showToast(message: "some error occured $e");
     }
   }
 }

@@ -31,7 +31,14 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Flutter Firebase',
+      title: 'BangunLah',
+      theme: ThemeData(
+        scaffoldBackgroundColor: Color(0xFF030924), // Global background color
+        appBarTheme: AppBarTheme(
+          backgroundColor: Color(0xFF030924), // AppBar color same as background
+          foregroundColor: Colors.white, // Text and icon color to white on appbar
+        ),
+      ),
       routes: {
         '/': (context) => SplashScreen(
               // Here, you can decide whether to show the LoginPage or HomePage based on user authentication
