@@ -65,6 +65,277 @@ class _ProfilePageState extends State<UserProfile> {
     }
   }
 
+  Future<void> editAge(String field) async {
+    int? newAge; // Use an integer to store the new age
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Text(
+          "Edit $field",
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: TextField(
+          autofocus: true,
+          keyboardType: TextInputType.number, // Restrict input to numbers
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            hintText: "Enter your age (18 or above)",
+            hintStyle: TextStyle(color: Colors.grey),
+          ),
+          onChanged: (value) {
+            int? enteredAge = int.tryParse(value); // Convert input to integer
+            if (enteredAge != null && enteredAge >= 18) {
+              newAge = enteredAge; // Only accept valid ages (18 or above)
+            } else {
+              newAge = null; // Reset to null if input is invalid
+            }
+          },
+        ),
+        actions: [
+          // Cancel button
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              "Cancel",
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+          // Save button
+          TextButton(
+            onPressed: () {
+              if (newAge != null) {
+                Navigator.of(context).pop(newAge.toString());
+              } else {
+                // Optionally show an error message
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text("Please enter a valid age (18 or above)."),
+                  backgroundColor: Colors.red,
+                ));
+              }
+            },
+            child: const Text(
+              "Save",
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    // Update Firestore
+    if (newAge != null) {
+      await userCollection.doc(currentUser.email).update({field: newAge});
+    }
+  }
+
+  // Function to edit gender using radio buttons
+  Future<void> editGender(String field) async {
+    String? newValue;
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Text(
+          "Edit $field",
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Male Radio Button
+            RadioListTile<String>(
+              title: const Text(
+                "Male",
+                style: TextStyle(color: Colors.white),
+              ),
+              value: "Male",
+              groupValue: newValue,
+              onChanged: (String? value) {
+                newValue = value;
+                setState(() {});
+              },
+              activeColor: Colors.white, // Active color for radio button
+              tileColor:
+                  Colors.grey[900], // Background color for the radio tile
+            ),
+
+            // Female Radio Button
+            RadioListTile<String>(
+              title: const Text(
+                "Female",
+                style: TextStyle(color: Colors.white),
+              ),
+              value: "Female",
+              groupValue: newValue,
+              onChanged: (String? value) {
+                newValue = value;
+                setState(() {});
+              },
+              activeColor: Colors.white, // Active color for radio button
+              tileColor:
+                  Colors.grey[900], // Background color for the radio tile
+            ),
+
+            // Others Radio Button
+            RadioListTile<String>(
+              title: const Text(
+                "Others",
+                style: TextStyle(color: Colors.white),
+              ),
+              value: "Others",
+              groupValue: newValue,
+              onChanged: (String? value) {
+                newValue = value;
+                setState(() {});
+              },
+              activeColor: Colors.white, // Active color for radio button
+              tileColor:
+                  Colors.grey[900], // Background color for the radio tile
+            ),
+          ],
+        ),
+        actions: [
+          // Cancel button
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                "Cancel",
+                style: TextStyle(color: Colors.white),
+              )),
+          // Save button
+          TextButton(
+              onPressed: () {
+                if (newValue != null) {
+                  Navigator.of(context).pop(newValue);
+                }
+              },
+              child: Text(
+                "Save",
+                style: TextStyle(color: Colors.white),
+              )),
+        ],
+      ),
+    );
+
+    // Update Firestore if a valid selection is made
+    if (newValue != null) {
+      await userCollection.doc(currentUser.email).update({field: newValue});
+    }
+  }
+
+  // Function to edit race using radio buttons
+  Future<void> editRace(String field) async {
+    String? newValue;
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Text(
+          "Edit $field",
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Malay Radio Button
+            RadioListTile<String>(
+              title: const Text(
+                "Malay",
+                style: TextStyle(color: Colors.white),
+              ),
+              value: "Malay",
+              groupValue: newValue,
+              onChanged: (String? value) {
+                newValue = value;
+                setState(() {});
+              },
+              activeColor: Colors.red, // Active color for radio button
+              tileColor:
+                  Colors.grey[900], // Background color for the radio tile
+            ),
+
+            // Chinese Radio Button
+            RadioListTile<String>(
+              title: const Text(
+                "Chinese",
+                style: TextStyle(color: Colors.white),
+              ),
+              value: "Chinese",
+              groupValue: newValue,
+              onChanged: (String? value) {
+                newValue = value;
+                setState(() {});
+              },
+              activeColor: Colors.red, // Active color for radio button
+              tileColor:
+                  Colors.grey[900], // Background color for the radio tile
+            ),
+
+            // Indian Radio Button
+            RadioListTile<String>(
+              title: const Text(
+                "Indian",
+                style: TextStyle(color: Colors.white),
+              ),
+              value: "Indian",
+              groupValue: newValue,
+              onChanged: (String? value) {
+                newValue = value;
+                setState(() {});
+              },
+              activeColor: Colors.red, // Active color for radio button
+              tileColor:
+                  Colors.grey[900], // Background color for the radio tile
+            ),
+
+            // Others Radio Button
+            RadioListTile<String>(
+              title: const Text(
+                "Others",
+                style: TextStyle(color: Colors.white),
+              ),
+              value: "Others",
+              groupValue: newValue,
+              onChanged: (String? value) {
+                newValue = value;
+                setState(() {});
+              },
+              activeColor: Colors.red, // Active color for radio button
+              tileColor:
+                  Colors.grey[900], // Background color for the radio tile
+            ),
+          ],
+        ),
+        actions: [
+          // Cancel button
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                "Cancel",
+                style: TextStyle(color: Colors.white),
+              )),
+          // Save button
+          TextButton(
+              onPressed: () {
+                if (newValue != null) {
+                  Navigator.of(context).pop(newValue);
+                }
+              },
+              child: Text(
+                "Save",
+                style: TextStyle(color: Colors.white),
+              )),
+        ],
+      ),
+    );
+
+    // Update Firestore if a valid selection is made
+    if (newValue != null) {
+      await userCollection.doc(currentUser.email).update({field: newValue});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -90,7 +361,8 @@ class _ProfilePageState extends State<UserProfile> {
           if (snapshot.hasData) {
             final userData =
                 snapshot.data!.data() as Map<String, dynamic>? ?? {};
-            print("Fetching data for email: ${currentUser.email}");
+
+            //print("Fetching data for email: ${currentUser.email}");
 
             String createdOnFormatted = userData['createdOn'] is Timestamp
                 ? DateFormat('yyyy-MM-dd') // Format: Year-Month-Day
@@ -140,23 +412,25 @@ class _ProfilePageState extends State<UserProfile> {
 
                 //Age
                 MyTextBox(
-                  text: userData['age'] ?? 'N/A',
+                  text: userData['age'] != null
+                      ? userData['age'].toString()
+                      : 'N/A',
                   sectionName: "Age",
-                  onPressed: () => editField('age'),
+                  onPressed: () => editAge('age'),
                 ),
 
                 //Gender
                 MyTextBox(
                   text: userData['gender'] ?? 'N/A',
                   sectionName: "Gender",
-                  onPressed: () => editField('gender'),
+                  onPressed: () => editGender('gender'),
                 ),
 
                 //Race
                 MyTextBox(
                   text: userData['race'] ?? 'N/A',
                   sectionName: "Race",
-                  onPressed: () => editField('race'),
+                  onPressed: () => editRace('race'),
                 ),
 
                 // Logout Button
