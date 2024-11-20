@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:fyp/Features/User_Auth/Presentation/Pages/user_profile.dart';
-import 'package:fyp/Features/User_Auth/Presentation/Widgets/carousel.dart'; // Import the CarouselWidget
+import 'package:fyp/Features/User_Auth/Presentation/Pages/detection.dart'; // Import DetectionPage
+import 'package:fyp/Features/User_Auth/Presentation/Widgets/carousel.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
-  // Navigate to the Profile Page
   void ProfilePage(BuildContext context) async {
     Navigator.push(
       context,
@@ -21,7 +21,7 @@ class HomePage extends StatelessWidget {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            Navigator.pop(context); // Navigate back to the previous screen
+            Navigator.pop(context);
           },
         ),
         title: Image.asset(
@@ -51,8 +51,6 @@ class HomePage extends StatelessWidget {
           const SizedBox(height: 15),
           const CarouselWidget(),
           const SizedBox(height: 100),
-          
-          // Container with border behind the button
           Container(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
             decoration: BoxDecoration(
@@ -63,7 +61,10 @@ class HomePage extends StatelessWidget {
             ),
             child: TextButton(
               onPressed: () {
-                // Add functionality for the Start Driving button
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const DetectionPage()),
+                );
               },
               child: Row(
                 mainAxisSize: MainAxisSize.min,
