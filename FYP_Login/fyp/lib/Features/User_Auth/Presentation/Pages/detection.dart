@@ -5,7 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart'; // For working with LatLng
 import 'package:geolocator/geolocator.dart'; // For getting location services
 
-const String openRouteServiceApiKey = 'bangunlah'; // Your OpenRouteService token
+const String openRouteServiceApiKey =
+    '5b3ce3597851110001cf62483b9c123314fc4b6fb68d9a9916852467'; // Your OpenRouteService token
 
 class DetectionPage extends StatefulWidget {
   const DetectionPage({Key? key}) : super(key: key);
@@ -47,24 +48,22 @@ class _DetectionPageState extends State<DetectionPage> {
       _currentPosition = position;
       _locationLoaded = true;
     });
-    print("Current position: ${_currentPosition.latitude}, ${_currentPosition.longitude}");
+    print(
+        "Current position: ${_currentPosition.latitude}, ${_currentPosition.longitude}");
   }
 
   // Geocoding API call to get coordinates of the destination
+// Geocoding API call to get coordinates of the destination
   Future<LatLng?> _searchDestination(String query) async {
+    // Using a CORS proxy to bypass cross-origin issues in the browser
     final url = Uri.parse(
-        'https://api.openrouteservice.org/geocode/search?api_key=$openRouteServiceApiKey&text=$query');
-    
-    print("Searching for destination: $query");
+        'https://cors-anywhere.herokuapp.com/https://api.openrouteservice.org/geocode/search?api_key=$openRouteServiceApiKey&text=$query');
 
     try {
       final response = await http.get(url);
-      print("Geocoding response status: ${response.statusCode}");
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print("Geocoding response: $data");
-
         if (data['features'].isNotEmpty) {
           final coordinates =
               data['features'][0]['geometry']['coordinates'] as List<dynamic>;
@@ -85,48 +84,49 @@ class _DetectionPageState extends State<DetectionPage> {
   }
 
   // Directions API call to get the route between current location and destination
-  Future<void> _calculateRoute(LatLng start, LatLng end) async {
-    final url = Uri.parse('https://api.openrouteservice.org/v2/directions/driving-car');
-    
-    print("Calculating route from $start to $end");
+  // Future<void> _calculateRoute(LatLng start, LatLng end) async {
+  //   final url =
+  //       Uri.parse('https://api.openrouteservice.org/v2/directions/driving-car');
 
-    final headers = {
-      'Authorization': 'Bearer $openRouteServiceApiKey',
-      'Content-Type': 'application/json',
-    };
+  //   print("Calculating route from $start to $end");
 
-    final body = jsonEncode({
-      "coordinates": [
-        [start.longitude, start.latitude],
-        [end.longitude, end.latitude],
-      ],
-    });
+  //   final headers = {
+  //     'Authorization': 'Bearer $openRouteServiceApiKey',
+  //     'Content-Type': 'application/json',
+  //   };
 
-    try {
-      final response = await http.post(url, headers: headers, body: body);
-      print("Route calculation response status: ${response.statusCode}");
+  //   final body = jsonEncode({
+  //     "coordinates": [
+  //       [start.longitude, start.latitude],
+  //       [end.longitude, end.latitude],
+  //     ],
+  //   });
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        print("Route calculation response: $data");
+  //   try {
+  //     final response = await http.post(url, headers: headers, body: body);
+  //     print("Route calculation response status: ${response.statusCode}");
 
-        final geometry = data['features'][0]['geometry']['coordinates'] as List;
-        final route = geometry
-            .map((coord) => LatLng(coord[1] as double, coord[0] as double))
-            .toList();
+  //     if (response.statusCode == 200) {
+  //       final data = json.decode(response.body);
+  //       print("Route calculation response: $data");
 
-        print('Route calculated: $route');
-        setState(() {
-          _route = route;
-        });
-      } else {
-        print('Failed to fetch route data: ${response.statusCode}');
-        print('Error: ${response.body}');
-      }
-    } catch (e) {
-      print('Error making HTTP request: $e');
-    }
-  }
+  //       final geometry = data['features'][0]['geometry']['coordinates'] as List;
+  //       final route = geometry
+  //           .map((coord) => LatLng(coord[1] as double, coord[0] as double))
+  //           .toList();
+
+  //       print('Route calculated: $route');
+  //       setState(() {
+  //         _route = route;
+  //       });
+  //     } else {
+  //       print('Failed to fetch route data: ${response.statusCode}');
+  //       print('Error: ${response.body}');
+  //     }
+  //   } catch (e) {
+  //     print('Error making HTTP request: $e');
+  //   }
+  // }
 
   // Handle search for destination
   void _onSearchDestination(String destination) async {
@@ -134,11 +134,10 @@ class _DetectionPageState extends State<DetectionPage> {
     final destCoordinates = await _searchDestination(destination);
     if (destCoordinates != null) {
       setState(() {
-        _destination = destCoordinates;
+        _destination = destCoordinates; // Update _destination
+        _mapController.move(_destination!, 14.0); // Move map to destination
+        print("Destination set: $_destination"); // Debugging output
       });
-      _calculateRoute(
-          LatLng(_currentPosition.latitude, _currentPosition.longitude),
-          destCoordinates);
     } else {
       print('No coordinates found for $destination');
     }
