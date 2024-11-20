@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart'; // For working with LatLng
 import 'package:geolocator/geolocator.dart'; // For getting location services
+import 'package:flutter_map/flutter_map.dart';
 
 const String openRouteServiceApiKey =
-    '5b3ce3597851110001cf62483b9c123314fc4b6fb68d9a9916852467'; // Your OpenRouteService token
+    '5b3ce3597851110001cf62483b9c123314fc4b6fb68d9a9916852467'; // OpenRouteService token
 
 class DetectionPage extends StatefulWidget {
   const DetectionPage({Key? key}) : super(key: key);
@@ -18,9 +18,13 @@ class DetectionPage extends StatefulWidget {
 class _DetectionPageState extends State<DetectionPage> {
   late Position _currentPosition;
   bool _locationLoaded = false;
+  List<Map<String, dynamic>> _destinationResults =
+      []; // List of destinations with their coordinates and distance
+  late LatLng _currentLatLng;
   late MapController _mapController;
-  LatLng? _destination;
   List<LatLng> _route = [];
+  List<String> _directions = []; // Store turn-by-turn directions
+  int _currentDirectionIndex = 0; // Track the current direction
 
   @override
   void initState() {
@@ -34,12 +38,8 @@ class _DetectionPageState extends State<DetectionPage> {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     LocationPermission permission = await Geolocator.checkPermission();
 
-    print("Location service enabled: $serviceEnabled");
-    print("Location permission status: $permission");
-
     if (!serviceEnabled || permission == LocationPermission.deniedForever) {
-      print("Location service is not enabled or permission is denied forever.");
-      return;
+      return; // Handle the error
     }
 
     Position position = await Geolocator.getCurrentPosition(
@@ -47,15 +47,13 @@ class _DetectionPageState extends State<DetectionPage> {
     setState(() {
       _currentPosition = position;
       _locationLoaded = true;
+      _currentLatLng = LatLng(
+          position.latitude, position.longitude); // Set the current location
     });
-    print(
-        "Current position: ${_currentPosition.latitude}, ${_currentPosition.longitude}");
   }
 
-  // Geocoding API call to get coordinates of the destination
-// Geocoding API call to get coordinates of the destination
-  Future<LatLng?> _searchDestination(String query) async {
-    // Using a CORS proxy to bypass cross-origin issues in the browser
+  // Geocoding API call to get related destinations
+  Future<List<Map<String, dynamic>>> _searchDestinations(String query) async {
     final url = Uri.parse(
         'https://cors-anywhere.herokuapp.com/https://api.openrouteservice.org/geocode/search?api_key=$openRouteServiceApiKey&text=$query');
 
@@ -64,82 +62,113 @@ class _DetectionPageState extends State<DetectionPage> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (data['features'].isNotEmpty) {
+        List<Map<String, dynamic>> destinations = [];
+
+        for (var feature in data['features']) {
           final coordinates =
-              data['features'][0]['geometry']['coordinates'] as List<dynamic>;
+              feature['geometry']['coordinates'] as List<dynamic>;
           final lat = coordinates[1] as double;
           final lng = coordinates[0] as double;
-          print('Destination found: $lat, $lng'); // Debugging
-          return LatLng(lat, lng);
-        } else {
-          print('No results found for the query.');
+
+          // Calculate distance from current location
+          final destinationLatLng = LatLng(lat, lng);
+          final distance =
+              _calculateDistance(_currentLatLng, destinationLatLng);
+
+          destinations.add({
+            'name': feature['properties']['label'],
+            'latLng': destinationLatLng,
+            'distance': distance,
+          });
         }
+
+        // Sort destinations by distance
+        destinations.sort((a, b) => a['distance'].compareTo(b['distance']));
+        return destinations;
       } else {
         print('Failed to fetch geocoding data: ${response.statusCode}');
       }
     } catch (e) {
       print('Error making HTTP request: $e');
     }
-    return null;
+    return [];
   }
 
-  // Directions API call to get the route between current location and destination
-  // Future<void> _calculateRoute(LatLng start, LatLng end) async {
-  //   final url =
-  //       Uri.parse('https://api.openrouteservice.org/v2/directions/driving-car');
+  // Calculate the distance between two LatLng points in kilometers
+  double _calculateDistance(LatLng start, LatLng end) {
+    var distanceInMeters = const Distance().as(LengthUnit.Meter, start, end);
+    return distanceInMeters / 1000; // Convert meters to kilometers
+  }
 
-  //   print("Calculating route from $start to $end");
+  // Get directions and turn-by-turn navigation
+  Future<void> _getDirections(LatLng destination) async {
+    final url = Uri.parse(
+        'https://api.openrouteservice.org/v2/directions/driving-car?api_key=$openRouteServiceApiKey');
 
-  //   final headers = {
-  //     'Authorization': 'Bearer $openRouteServiceApiKey',
-  //     'Content-Type': 'application/json',
-  //   };
+    final body = jsonEncode({
+      "coordinates": [
+        [_currentLatLng.longitude, _currentLatLng.latitude],
+        [destination.longitude, destination.latitude]
+      ]
+    });
 
-  //   final body = jsonEncode({
-  //     "coordinates": [
-  //       [start.longitude, start.latitude],
-  //       [end.longitude, end.latitude],
-  //     ],
-  //   });
+    try {
+      final response = await http
+          .post(url, body: body, headers: {'Content-Type': 'application/json'});
 
-  //   try {
-  //     final response = await http.post(url, headers: headers, body: body);
-  //     print("Route calculation response status: ${response.statusCode}");
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('API Response: $data'); // Log the full response for debugging
 
-  //     if (response.statusCode == 200) {
-  //       final data = json.decode(response.body);
-  //       print("Route calculation response: $data");
+        // Check if the response contains valid features and segments
+        if (data['features'] != null && data['features'].isNotEmpty) {
+          final geometry =
+              data['features'][0]['geometry']['coordinates'] as List;
+          final route = geometry
+              .map((coord) => LatLng(coord[1] as double, coord[0] as double))
+              .toList();
 
-  //       final geometry = data['features'][0]['geometry']['coordinates'] as List;
-  //       final route = geometry
-  //           .map((coord) => LatLng(coord[1] as double, coord[0] as double))
-  //           .toList();
+          // Ensure that steps exist in the response before accessing them
+          if (data['features'][0]['properties']['segments'] != null &&
+              data['features'][0]['properties']['segments'].isNotEmpty) {
+            final instructions = data['features'][0]['properties']['segments']
+                [0]['steps'] as List;
+            final directions = instructions
+                .map((step) => step['instruction'] as String)
+                .toList();
 
-  //       print('Route calculated: $route');
-  //       setState(() {
-  //         _route = route;
-  //       });
-  //     } else {
-  //       print('Failed to fetch route data: ${response.statusCode}');
-  //       print('Error: ${response.body}');
-  //     }
-  //   } catch (e) {
-  //     print('Error making HTTP request: $e');
-  //   }
-  // }
+            setState(() {
+              _route = route;
+              _directions = directions;
+            });
+          } else {
+            print('No segments or steps found in the response');
+          }
+        } else {
+          print('No valid features found in the response');
+        }
+      } else {
+        print('Failed to fetch route data: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error making HTTP request: $e');
+    }
+  }
 
   // Handle search for destination
   void _onSearchDestination(String destination) async {
-    print('Searching for destination: $destination'); // Debugging
-    final destCoordinates = await _searchDestination(destination);
-    if (destCoordinates != null) {
+    final destinations = await _searchDestinations(destination);
+    setState(() {
+      _destinationResults = destinations;
+    });
+  }
+
+  // Show next direction
+  void _showNextDirection() {
+    if (_currentDirectionIndex < _directions.length) {
       setState(() {
-        _destination = destCoordinates; // Update _destination
-        _mapController.move(_destination!, 14.0); // Move map to destination
-        print("Destination set: $_destination"); // Debugging output
+        _currentDirectionIndex++;
       });
-    } else {
-      print('No coordinates found for $destination');
     }
   }
 
@@ -172,8 +201,7 @@ class _DetectionPageState extends State<DetectionPage> {
               child: FlutterMap(
                 mapController: _mapController,
                 options: MapOptions(
-                  center: LatLng(
-                      _currentPosition.latitude, _currentPosition.longitude),
+                  center: _currentLatLng,
                   zoom: 14.0,
                 ),
                 children: [
@@ -185,17 +213,10 @@ class _DetectionPageState extends State<DetectionPage> {
                   MarkerLayer(
                     markers: [
                       Marker(
-                        point: LatLng(_currentPosition.latitude,
-                            _currentPosition.longitude),
+                        point: _currentLatLng,
                         builder: (context) =>
                             const Icon(Icons.location_on, color: Colors.blue),
                       ),
-                      if (_destination != null)
-                        Marker(
-                          point: _destination!,
-                          builder: (context) =>
-                              const Icon(Icons.location_on, color: Colors.red),
-                        ),
                     ],
                   ),
                   PolylineLayer(
@@ -210,6 +231,62 @@ class _DetectionPageState extends State<DetectionPage> {
                 ],
               ),
             ),
+            if (_directions.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  'Next Direction:',
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
+                ),
+              ),
+              Text(
+                _directions[_currentDirectionIndex],
+                style: const TextStyle(color: Colors.white),
+              ),
+              ElevatedButton(
+                onPressed: _showNextDirection,
+                child: const Text('Next'),
+              ),
+            ],
+            if (_destinationResults.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  'Nearby Destinations:',
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _destinationResults.length,
+                  itemBuilder: (context, index) {
+                    final destination = _destinationResults[index];
+                    return ListTile(
+                      title: Text(
+                        destination['name'],
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      subtitle: Text(
+                        '${destination['distance'].toStringAsFixed(2)} km away',
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      onTap: () {
+                        setState(() {
+                          _mapController.move(destination['latLng'], 14.0);
+                          _getDirections(destination['latLng']);
+                        });
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
           ],
         ],
       ),
