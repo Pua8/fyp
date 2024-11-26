@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fyp/Features/User_Auth/firebase_auth_implementation/firebase_auth_services.dart';
@@ -18,7 +19,8 @@ class _SignUpPageState extends State<SignUpPage> {
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
   bool isSigningUp = false;
   bool _isPasswordVisible = false;
@@ -50,7 +52,8 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   void _validatePasswordMatch() {
-    if (_confirmPasswordController.text.trim() != _passwordController.text.trim()) {
+    if (_confirmPasswordController.text.trim() !=
+        _passwordController.text.trim()) {
       setState(() {
         passwordError = "Passwords do not match";
       });
@@ -123,7 +126,9 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                      _isPasswordVisible
+                          ? Icons.visibility_off
+                          : Icons.visibility,
                       color: Colors.white,
                     ),
                     onPressed: () {
@@ -167,7 +172,9 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _isConfirmPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                      _isConfirmPasswordVisible
+                          ? Icons.visibility_off
+                          : Icons.visibility,
                       color: Colors.white,
                     ),
                     onPressed: () {
@@ -177,7 +184,15 @@ class _SignUpPageState extends State<SignUpPage> {
                     },
                   ),
                 ),
+                enableInteractiveSelection: false, // Disable text selection
+                onTap: () {
+                  Clipboard.setData(
+                      const ClipboardData(text: "")); // Clear clipboard data
+                },
+                buildCounter:
+                    null, // No paste actions will trigger in most cases
               ),
+
               SizedBox(height: 30),
               GestureDetector(
                 onTap: _signUp,
@@ -266,7 +281,8 @@ class _SignUpPageState extends State<SignUpPage> {
     // Check if password meets requirements
     if (!validatePassword(password)) {
       setState(() {
-        passwordError = "Password must:\n- Be at least 8 characters long\n- Contain at least one uppercase letter\n- Contain at least one digit\n- Contain at least one special character";
+        passwordError =
+            "Password must:\n- Be at least 8 characters long\n- Contain at least one uppercase letter\n- Contain at least one digit\n- Contain at least one special character";
         isSigningUp = false;
       });
       return;
