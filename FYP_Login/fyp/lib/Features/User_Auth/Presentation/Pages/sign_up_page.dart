@@ -1,5 +1,4 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fyp/Features/User_Auth/firebase_auth_implementation/firebase_auth_services.dart';
@@ -19,8 +18,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
 
   bool isSigningUp = false;
   bool _isPasswordVisible = false;
@@ -52,8 +50,7 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   void _validatePasswordMatch() {
-    if (_confirmPasswordController.text.trim() !=
-        _passwordController.text.trim()) {
+    if (_confirmPasswordController.text.trim() != _passwordController.text.trim()) {
       setState(() {
         passwordError = "Passwords do not match";
       });
@@ -184,15 +181,7 @@ class _SignUpPageState extends State<SignUpPage> {
                     },
                   ),
                 ),
-                enableInteractiveSelection: false, // Disable text selection
-                onTap: () {
-                  Clipboard.setData(
-                      const ClipboardData(text: "")); // Clear clipboard data
-                },
-                buildCounter:
-                    null, // No paste actions will trigger in most cases
               ),
-
               SizedBox(height: 30),
               GestureDetector(
                 onTap: _signUp,
@@ -292,6 +281,9 @@ class _SignUpPageState extends State<SignUpPage> {
       // Register user in Firebase Authentication
       User? user = await _auth.signUpWithEmailAndPassword(email, password);
 
+      // Send email verification
+      await user?.sendEmailVerification();
+
       // Add email to Firestore for email existence checks
       if (user != null) {
         await _firestore.collection('userAuth').doc(email).set({
@@ -299,8 +291,10 @@ class _SignUpPageState extends State<SignUpPage> {
           'createdAt': Timestamp.now(),
         });
 
-        showToast(message: "User is successfully created");
-        Navigator.pushNamed(context, "/home");
+        showToast(
+            message:
+                "Signup successful. Verification email sent. Please verify your email before logging in.");
+        Navigator.pushNamed(context, "/login");
       } else {
         showToast(message: "An error occurred during signup.");
       }
