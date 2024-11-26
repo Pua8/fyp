@@ -12,13 +12,24 @@ import numpy as np
 from EAR import eye_aspect_ratio
 from MAR import mouth_aspect_ratio
 from HeadPose import getHeadTiltAndCoords
-
+import os
+import pygame
 
 def initialize_detector():
     print("[INFO] loading facial landmark predictor...")
     detector = dlib.get_frontal_face_detector()
     predictor = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat')
     return detector, predictor
+
+# Initialize pygame mixer explicitly
+def initialize_mixer():
+    try:
+        pygame.mixer.quit()  # Ensure no previous mixer is running
+        pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
+        print("[INFO] Mixer initialized successfully.")
+    except Exception as e:
+        print(f"[ERROR] Unable to initialize mixer: {e}")
+        raise
 
 
 def initialize_camera():
@@ -73,7 +84,16 @@ def process_landmarks(frame, shape):
                     (0, 0, 255), 2)
 
 
+from playsound import playsound  # Import playsound for playing audio
+import time  # For time tracking
+
+# Initialize global variables
+start_time = None  # Start time for when eyes are detected as closed
+alert_triggered = False  # Flag to avoid repeated alerts
+
 def process_eyes(frame, shape):
+    global COUNTER, start_time, alert_triggered
+
     (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
     (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
 
@@ -83,21 +103,41 @@ def process_eyes(frame, shape):
     rightEAR = eye_aspect_ratio(rightEye)
     ear = (leftEAR + rightEAR) / 2.0
 
+    # Draw eye contours
     leftEyeHull = cv2.convexHull(leftEye)
     rightEyeHull = cv2.convexHull(rightEye)
     cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
     cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
 
+    # Display EAR value
+    cv2.putText(frame, "EAR: {:.2f}".format(ear), (850, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+
+    # Check if EAR is below the threshold
     if ear < EYE_AR_THRESH:
-        global COUNTER
-        COUNTER += 1
-        if COUNTER >= EYE_AR_CONSEC_FRAMES:
-            cv2.putText(frame, "Eyes Closed!", (500, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        cv2.putText(frame, "Eyes Closed!", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+
+        if start_time is None:  # First time eyes are detected as closed
+            start_time = time.time()  # Record start time
+        else:
+            # Calculate how long the eyes have been closed
+            duration = time.time() - start_time
+            if duration >= 3:  # If eyes are closed for >= 3 seconds
+                if not alert_triggered:
+                    alert_triggered = True  # Avoid re-triggering alert
+                    cv2.putText(frame, "Drowsy! Alert Triggered!", (500, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                    # Play alert sound
+                    sound_path = os.path.join("Sound", "AlertSound.wav")
+                    play_alert_sound(sound_path)
     else:
+        # Reset variables if eyes are open
+        start_time = None
+        alert_triggered = False
         COUNTER = 0
 
 
 def process_mouth(frame, shape):
+    global start_time, alert_triggered
+
     (mStart, mEnd) = (49, 68)
     mouth = shape[mStart:mEnd]
     mar = mouth_aspect_ratio(mouth)
@@ -106,8 +146,33 @@ def process_mouth(frame, shape):
     cv2.drawContours(frame, [mouthHull], -1, (0, 255, 0), 1)
     cv2.putText(frame, "MAR: {:.2f}".format(mar), (650, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
+    # If the mouth is open (MAR > threshold), check the duration
     if mar > MOUTH_AR_THRESH:
-        cv2.putText(frame, "Yawning!", (800, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        cv2.putText(frame, "Mouth Open!", (250, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+
+        if start_time is None:  # Record the start time when the mouth first opens
+            start_time = time.time()
+            #print("Start time recorded!")  # Debug: check if start time is recorded
+        else:
+            # Calculate how long the mouth has been open
+            duration = time.time() - start_time
+            #print(f"Duration: {duration} seconds")  # Debug: check duration
+
+            if duration >= 1:
+                if not alert_triggered:
+                    alert_triggered = True  # Trigger the alert sound only once
+                    cv2.putText(frame, "Yawning! Alert Triggered!", (800, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
+                                (0, 0, 255), 2)
+                    # Play alert sound
+                    sound_path = os.path.join("Sound", "AlertSound.wav")
+                    play_alert_sound(sound_path)
+    else:
+        # If the mouth is closed, reset the timer
+        #if start_time is not None:
+            #print("Mouth closed, resetting timer")  # Debug: check if timer is being reset
+        start_time = None
+        alert_triggered = False
+
 
 def process_head_pose(frame, shape, frame_shape):
     size = frame_shape
@@ -144,9 +209,23 @@ def main():
     cv2.destroyAllWindows()
     vs.stop()
 
+def play_alert_sound(file_path):
+    """Play an alert sound when drowsiness is detected."""
+    try:
+        # Reinitialize mixer before playback
+        if not pygame.mixer.get_init():
+            initialize_mixer()
+
+        pygame.mixer.music.load(file_path)  # Load the MP3 file
+        pygame.mixer.music.play()  # Play the sound
+        while pygame.mixer.music.get_busy():  # Wait until the sound finishes
+            time.sleep(0.1)
+    except Exception as e:
+        print(f"[ERROR] Unable to play sound: {e}")
+
 if __name__ == "__main__":
-    EYE_AR_THRESH = 0.20
-    MOUTH_AR_THRESH = 0.79
+    EYE_AR_THRESH = 0.18
+    MOUTH_AR_THRESH = 0.65
     EYE_AR_CONSEC_FRAMES = 3
     COUNTER = 0
     frame_width = 1024
