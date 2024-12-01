@@ -1,4 +1,3 @@
-import 'dart:ui_web' as ui;
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:mapbox_gl/mapbox_gl.dart';
@@ -6,8 +5,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class MapboxPage extends StatefulWidget {
+  const MapboxPage({super.key});
+
   @override
-  _MapboxPageState createState() => _MapboxPageState();
+  State<MapboxPage> createState() => _MapboxPageState();
 }
 
 class _MapboxPageState extends State<MapboxPage> {
@@ -15,6 +16,11 @@ class _MapboxPageState extends State<MapboxPage> {
   Position? currentPosition;
   String? selectedDestination;
   List<Map<String, dynamic>> destinationList = [];
+  List<LatLng> routeCoordinates = [];
+  List<String> directionsSteps = [];
+  int currentStepIndex = 0;
+  String? currentInstruction = '';
+  bool isNavigating = false;
 
   @override
   void initState() {
@@ -50,33 +56,25 @@ class _MapboxPageState extends State<MapboxPage> {
       final response = await http.get(Uri.parse(apiUrl));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        final List<Map<String, dynamic>> results =
+            (data['features'] as List).map((feature) {
+          double lat = feature['geometry']['coordinates'][1];
+          double lng = feature['geometry']['coordinates'][0];
 
-        // Parse the search results
-        final List<Map<String, dynamic>> results = (data['features'] as List)
-            .map((feature) {
-              double lat = feature['geometry']['coordinates'][1];
-              double lng = feature['geometry']['coordinates'][0];
+          double distance = 0.0;
+          if (currentPosition != null) {
+            distance = Geolocator.distanceBetween(currentPosition!.latitude,
+                currentPosition!.longitude, lat, lng);
+          }
 
-              double distance = 0.0;
-              if (currentPosition != null) {
-                // Calculate distance between user's location and destination
-                distance = Geolocator.distanceBetween(
-                    currentPosition!.latitude,
-                    currentPosition!.longitude,
-                    lat,
-                    lng);
-              }
+          return {
+            'name': feature['place_name'],
+            'distance': distance / 1000,
+            'latitude': lat,
+            'longitude': lng,
+          };
+        }).toList();
 
-              return {
-                'name': feature['place_name'],
-                'distance': distance / 1000, // Convert to km
-                'latitude': lat,
-                'longitude': lng,
-              };
-            })
-            .toList();
-
-        // Sort by distance (ascending)
         results.sort((a, b) => a['distance'].compareTo(b['distance']));
 
         setState(() {
@@ -90,10 +88,66 @@ class _MapboxPageState extends State<MapboxPage> {
     }
   }
 
+  Future<void> _getDirections(double destLat, double destLng) async {
+    if (currentPosition == null) return;
+
+    final accessToken =
+        "pk.eyJ1IjoicHVhLXphYyIsImEiOiJjbTQ0YjI5YjAwaWhlMmtzZmkzOTEwNmMyIn0.XsV8HXy-GZabhruNLRCa5w";
+    final directionsApiUrl =
+        "https://api.mapbox.com/directions/v5/mapbox/driving/${currentPosition!.longitude},${currentPosition!.latitude};$destLng,$destLat?geometries=geojson&steps=true&access_token=$accessToken";
+
+    try {
+      final response = await http.get(Uri.parse(directionsApiUrl));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final route = data['routes'][0]['geometry']['coordinates'];
+        final steps = data['routes'][0]['legs'][0]['steps'];
+
+        setState(() {
+          directionsSteps = steps.map<String>((step) {
+            var instruction = step['maneuver']['instruction'];
+            return instruction != null ? instruction.toString() : '';
+          }).toList();
+          currentInstruction =
+              directionsSteps.isNotEmpty ? directionsSteps[0] : '';
+        });
+
+        routeCoordinates =
+            route.map<LatLng>((coord) => LatLng(coord[1], coord[0])).toList();
+
+        mapController.addLine(
+          LineOptions(
+            geometry: routeCoordinates,
+            lineColor: "#FF0000",
+            lineWidth: 5.0,
+          ),
+        );
+      } else {
+        print('Error fetching directions: ${response.body}');
+      }
+    } catch (e) {
+      print('Error: $e');
+    }
+  }
+
   void _startTrip() {
-    if (selectedDestination != null) {
-      // Navigate to selected destination using Mapbox Directions API
-      print('Starting trip to $selectedDestination');
+    if (selectedDestination != null && currentPosition != null) {
+      final destination = destinationList
+          .firstWhere((element) => element['name'] == selectedDestination);
+
+      _getDirections(destination['latitude'], destination['longitude']);
+      setState(() {
+        isNavigating = true;
+      });
+    }
+  }
+
+  void _nextStep() {
+    if (currentStepIndex < directionsSteps.length - 1) {
+      setState(() {
+        currentStepIndex++;
+        currentInstruction = directionsSteps[currentStepIndex];
+      });
     }
   }
 
@@ -101,15 +155,98 @@ class _MapboxPageState extends State<MapboxPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Mapbox Page',
-          style: TextStyle(color: Colors.white),
-        ),
-        backgroundColor: Colors.black, // Ensure the background contrasts the text
+        title: Text('Mapbox Navigation'),
+        backgroundColor: Colors.black,
       ),
-      body: currentPosition == null
-          ? Center(
-              child: CircularProgressIndicator(),
+      body: isNavigating
+          ? Stack(
+              children: [
+                MapboxMap(
+                  accessToken:
+                      "pk.eyJ1IjoicHVhLXphYyIsImEiOiJjbTQ0YjI5YjAwaWhlMmtzZmkzOTEwNmMyIn0.XsV8HXy-GZabhruNLRCa5w",
+                  onMapCreated: _onMapCreated,
+                  initialCameraPosition: CameraPosition(
+                    target: LatLng(
+                        currentPosition!.latitude, currentPosition!.longitude),
+                    zoom: 15.0,
+                  ),
+                  myLocationEnabled: true,
+                ),
+                Positioned(
+                  top: 20,
+                  left: 20,
+                  right: 20,
+                  child: Card(
+                    elevation: 4,
+                    color: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            currentInstruction ?? 'No instructions available',
+                            style: TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 5),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Distance: 100 ft',
+                                style: TextStyle(
+                                    fontSize: 14, color: Colors.grey[700]),
+                              ),
+                              Icon(Icons.navigation, color: Colors.blue),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 20,
+                  left: 20,
+                  right: 20,
+                  child: Card(
+                    elevation: 4,
+                    color: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'ETA: 7 hr 32 min',
+                                style: TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                'Arrival: 12:16 am',
+                                style: TextStyle(
+                                    fontSize: 16, color: Colors.grey[700]),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                isNavigating = false;
+                              });
+                            },
+                            child: Text('Exit Navigation'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             )
           : Column(
               children: [
@@ -119,23 +256,30 @@ class _MapboxPageState extends State<MapboxPage> {
                         "pk.eyJ1IjoicHVhLXphYyIsImEiOiJjbTQ0YjI5YjAwaWhlMmtzZmkzOTEwNmMyIn0.XsV8HXy-GZabhruNLRCa5w",
                     onMapCreated: _onMapCreated,
                     initialCameraPosition: CameraPosition(
-                      target: LatLng(
-                        currentPosition!.latitude,
-                        currentPosition!.longitude,
-                      ),
+                      target: LatLng(currentPosition?.latitude ?? 0.0,
+                          currentPosition?.longitude ?? 0.0),
                       zoom: 14.0,
                     ),
+                    myLocationEnabled: true,
                   ),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: TextField(
+                    style: TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       hintText: 'Search for a destination',
-                      hintStyle: TextStyle(color: Colors.white54),
-                      border: OutlineInputBorder(),
+                      hintStyle: TextStyle(color: Colors.white),
+                      border: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white),
+                      ),
                     ),
-                    style: TextStyle(color: Colors.white),
                     onSubmitted: _searchDestination,
                   ),
                 ),
@@ -147,11 +291,15 @@ class _MapboxPageState extends State<MapboxPage> {
                       return ListTile(
                         title: Text(
                           destination['name'],
-                          style: TextStyle(color: Colors.white),
+                          style: TextStyle(
+                              color: Colors
+                                  .white), // Title text color set to white
                         ),
                         subtitle: Text(
                           'Distance: ${destination['distance'].toStringAsFixed(2)} km',
-                          style: TextStyle(color: Colors.white70),
+                          style: TextStyle(
+                              color: Colors
+                                  .white), // Subtitle text color set to white
                         ),
                         onTap: () {
                           setState(() {
@@ -164,15 +312,10 @@ class _MapboxPageState extends State<MapboxPage> {
                 ),
                 ElevatedButton(
                   onPressed: selectedDestination != null ? _startTrip : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                  ),
                   child: Text('Start Trip'),
                 ),
               ],
             ),
-      backgroundColor: Colors.black, // Make the background black
     );
   }
 }

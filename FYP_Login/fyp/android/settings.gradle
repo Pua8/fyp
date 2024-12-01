@@ -23,3 +23,6 @@ plugins {
 }
 
 include ":app"
+
+include ':mapbox_gl'
+project(':mapbox_gl').projectDir = new File('C:/Users/Pua/.pub-cache/hosted/pub.dev/mapbox_gl-0.16.0/android')
