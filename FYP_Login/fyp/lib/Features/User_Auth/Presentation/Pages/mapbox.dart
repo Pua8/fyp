@@ -3,6 +3,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:mapbox_gl/mapbox_gl.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';  // Import for formatting the arrival time
 
 class MapboxPage extends StatefulWidget {
   const MapboxPage({super.key});
@@ -21,6 +22,10 @@ class _MapboxPageState extends State<MapboxPage> {
   int currentStepIndex = 0;
   String? currentInstruction = '';
   bool isNavigating = false;
+
+  DateTime? estimatedArrivalTime;
+  String? etaText = '';
+  String? arrivalText = '';
 
   @override
   void initState() {
@@ -69,7 +74,7 @@ class _MapboxPageState extends State<MapboxPage> {
 
           return {
             'name': feature['place_name'],
-            'distance': distance / 1000,
+            'distance': distance / 1000, // in km
             'latitude': lat,
             'longitude': lng,
           };
@@ -122,6 +127,17 @@ class _MapboxPageState extends State<MapboxPage> {
             lineWidth: 5.0,
           ),
         );
+
+        // Get the duration (travel time) and distance from the API response
+        final durationInSeconds = data['routes'][0]['duration'];  // in seconds
+        final distanceInMeters = data['routes'][0]['distance'];  // in meters
+
+        // Calculate ETA and Arrival Time using duration and distance from Mapbox
+        final duration = Duration(seconds: durationInSeconds.toInt());
+        DateTime now = DateTime.now();
+        estimatedArrivalTime = now.add(duration);
+        etaText = 'ETA: ${duration.inMinutes} min';
+        arrivalText = 'Arrival: ${DateFormat('hh:mm a').format(estimatedArrivalTime!)}';
       } else {
         print('Error fetching directions: ${response.body}');
       }
@@ -194,7 +210,7 @@ class _MapboxPageState extends State<MapboxPage> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Distance: 100 ft',
+                                etaText ?? 'ETA: Calculating...',
                                 style: TextStyle(
                                     fontSize: 14, color: Colors.grey[700]),
                               ),
@@ -221,12 +237,12 @@ class _MapboxPageState extends State<MapboxPage> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'ETA: 7 hr 32 min',
+                                etaText ?? 'ETA: Calculating...',
                                 style: TextStyle(
                                     fontSize: 16, fontWeight: FontWeight.bold),
                               ),
                               Text(
-                                'Arrival: 12:16 am',
+                                arrivalText ?? 'Arrival: Calculating...',
                                 style: TextStyle(
                                     fontSize: 16, color: Colors.grey[700]),
                               ),
