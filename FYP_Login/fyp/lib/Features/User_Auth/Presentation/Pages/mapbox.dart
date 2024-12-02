@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:flutter/foundation.dart';
 
 class MapboxPage extends StatefulWidget {
   const MapboxPage({super.key});
@@ -36,6 +37,12 @@ class _MapboxPageState extends State<MapboxPage> {
     flutterTts = FlutterTts();
   }
 
+  @override
+  void dispose() {
+    flutterTts.stop(); // Stop ongoing TTS operations
+    super.dispose(); // Dispose of the TTS instance
+  }
+
   Future<void> _getUserLocation() async {
     try {
       Position position = await Geolocator.getCurrentPosition(
@@ -50,6 +57,30 @@ class _MapboxPageState extends State<MapboxPage> {
 
   void _onMapCreated(MapboxMapController controller) {
     mapController = controller;
+
+    if (currentPosition != null) {
+      mapController.moveCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target:
+                LatLng(currentPosition!.latitude, currentPosition!.longitude),
+            zoom: 15.0,
+            tilt: 60.0, // Ensure the tilt for 3D view
+            bearing: currentPosition!.heading ?? 0.0,
+          ),
+        ),
+      );
+    } else {
+      // Default camera position if location is unavailable
+      mapController.moveCamera(
+        CameraUpdate.newCameraPosition(
+          const CameraPosition(
+            target: LatLng(0.0, 0.0),
+            zoom: 1.0,
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _searchDestination(String query) async {
@@ -99,7 +130,7 @@ class _MapboxPageState extends State<MapboxPage> {
   Future<void> _speakInstruction(String instruction) async {
     await flutterTts.setLanguage("en-US");
     await flutterTts.setPitch(1.0);
-    await flutterTts.setSpeechRate(1.0); 
+    await flutterTts.setSpeechRate(1.0);
     await flutterTts.speak(instruction);
   }
 
@@ -136,7 +167,13 @@ class _MapboxPageState extends State<MapboxPage> {
       // Update camera position
       if (currentPosition != null) {
         mapController.moveCamera(
-          CameraUpdate.newLatLng(LatLng(position.latitude, position.longitude)),
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: LatLng(position.latitude, position.longitude),
+              zoom: 16.5, // Adjust zoom level for navigation
+              tilt: 60.0, // Add tilt for a 3D-like view
+            ),
+          ),
         );
       }
     });
@@ -172,6 +209,7 @@ class _MapboxPageState extends State<MapboxPage> {
         final route = data['routes'][0]['geometry']['coordinates'];
         final steps = data['routes'][0]['legs'][0]['steps'];
 
+        // print('Steps: $steps'); // Check if steps are populated
         setState(() {
           directionsSteps = steps.map<String>((step) {
             var instruction = step['maneuver']['instruction'];
@@ -187,8 +225,9 @@ class _MapboxPageState extends State<MapboxPage> {
         mapController.addLine(
           LineOptions(
             geometry: routeCoordinates,
-            lineColor: "red",
-            lineWidth: 15.0,
+            lineColor: "#007AFF",
+            lineWidth: 5.0,
+            lineOpacity: 1.0,
           ),
         );
 
@@ -267,39 +306,47 @@ class _MapboxPageState extends State<MapboxPage> {
                       "pk.eyJ1IjoicHVhLXphYyIsImEiOiJjbTQ0YjI5YjAwaWhlMmtzZmkzOTEwNmMyIn0.XsV8HXy-GZabhruNLRCa5w",
                   onMapCreated: _onMapCreated,
                   initialCameraPosition: CameraPosition(
-                    target: LatLng(
-                        currentPosition!.latitude, currentPosition!.longitude),
+                    target: LatLng(currentPosition?.latitude ?? 0.0,
+                        currentPosition?.longitude ?? 0.0),
                     zoom: 15.0,
                   ),
                   myLocationEnabled: true,
+                  myLocationTrackingMode: MyLocationTrackingMode.None,
+                  myLocationRenderMode: kIsWeb
+                      ? MyLocationRenderMode.NORMAL // Default for web
+                      : MyLocationRenderMode.COMPASS, // Adjust for mobile
+                  
                 ),
+                // myLocationTrackingMode: MyLocationTrackingMode.None,
                 Positioned(
                   top: 20,
                   left: 20,
                   right: 20,
                   child: Card(
-                    elevation: 4,
-                    color: Colors.white,
+                    elevation: 6,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
                     child: Padding(
                       padding: const EdgeInsets.all(12.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            currentInstruction ?? 'No instructions available',
-                            style: TextStyle(
+                            currentInstruction ?? 'Fetching directions...',
+                            style: const TextStyle(
                                 fontSize: 18, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 5),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                etaText ?? 'ETA: Calculating...',
-                                style: TextStyle(
-                                    fontSize: 14, color: Colors.grey[700]),
-                              ),
-                              Icon(Icons.navigation, color: Colors.blue),
+                              // Text(
+                              //   etaText ?? 'ETA: Loading...',
+                              //   style: const TextStyle(
+                              //       fontSize: 14, color: Colors.grey),
+                              // ),
+                              const Icon(Icons.directions_car,
+                                  color: Colors.blue),
                             ],
                           ),
                         ],
