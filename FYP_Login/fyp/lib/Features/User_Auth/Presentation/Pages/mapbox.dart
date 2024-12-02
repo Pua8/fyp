@@ -3,7 +3,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:mapbox_gl/mapbox_gl.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:intl/intl.dart';  // Import for formatting the arrival time
+import 'package:intl/intl.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 class MapboxPage extends StatefulWidget {
   const MapboxPage({super.key});
@@ -13,6 +14,7 @@ class MapboxPage extends StatefulWidget {
 }
 
 class _MapboxPageState extends State<MapboxPage> {
+  late FlutterTts flutterTts;
   late MapboxMapController mapController;
   Position? currentPosition;
   String? selectedDestination;
@@ -31,6 +33,7 @@ class _MapboxPageState extends State<MapboxPage> {
   void initState() {
     super.initState();
     _getUserLocation();
+    flutterTts = FlutterTts();
   }
 
   Future<void> _getUserLocation() async {
@@ -93,6 +96,67 @@ class _MapboxPageState extends State<MapboxPage> {
     }
   }
 
+  Future<void> _speakInstruction(String instruction) async {
+    await flutterTts.setLanguage("en-US");
+    await flutterTts.setPitch(1.0);
+    await flutterTts.setSpeechRate(1.0); 
+    await flutterTts.speak(instruction);
+  }
+
+  void _startTurnByTurnNavigation() {
+    Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 10, // Update when the user moves 10 meters
+      ),
+    ).listen((Position position) {
+      setState(() {
+        currentPosition = position;
+      });
+
+      if (directionsSteps.isNotEmpty) {
+        final currentStep = directionsSteps[currentStepIndex];
+        final stepLocation = LatLng(
+          routeCoordinates[currentStepIndex].latitude,
+          routeCoordinates[currentStepIndex].longitude,
+        );
+
+        final distanceToNextStep = Geolocator.distanceBetween(
+          position.latitude,
+          position.longitude,
+          stepLocation.latitude,
+          stepLocation.longitude,
+        );
+
+        if (distanceToNextStep < 50) {
+          _updateStep();
+        }
+      }
+
+      // Update camera position
+      if (currentPosition != null) {
+        mapController.moveCamera(
+          CameraUpdate.newLatLng(LatLng(position.latitude, position.longitude)),
+        );
+      }
+    });
+  }
+
+  void _updateStep() {
+    if (currentStepIndex < directionsSteps.length - 1) {
+      setState(() {
+        currentStepIndex++;
+        currentInstruction = directionsSteps[currentStepIndex];
+      });
+      _speakInstruction(currentInstruction!); // Trigger TTS
+    } else {
+      setState(() {
+        currentInstruction = "You have arrived at your destination.";
+      });
+      _speakInstruction(currentInstruction!); // Final TTS instruction
+    }
+  }
+
   Future<void> _getDirections(double destLat, double destLng) async {
     if (currentPosition == null) return;
 
@@ -123,21 +187,22 @@ class _MapboxPageState extends State<MapboxPage> {
         mapController.addLine(
           LineOptions(
             geometry: routeCoordinates,
-            lineColor: "#FF0000",
-            lineWidth: 5.0,
+            lineColor: "red",
+            lineWidth: 15.0,
           ),
         );
 
         // Get the duration (travel time) and distance from the API response
-        final durationInSeconds = data['routes'][0]['duration'];  // in seconds
-        final distanceInMeters = data['routes'][0]['distance'];  // in meters
+        final durationInSeconds = data['routes'][0]['duration']; // in seconds
+        final distanceInMeters = data['routes'][0]['distance']; // in meters
 
         // Calculate ETA and Arrival Time using duration and distance from Mapbox
         final duration = Duration(seconds: durationInSeconds.toInt());
         DateTime now = DateTime.now();
         estimatedArrivalTime = now.add(duration);
         etaText = 'ETA: ${duration.inMinutes} min';
-        arrivalText = 'Arrival: ${DateFormat('hh:mm a').format(estimatedArrivalTime!)}';
+        arrivalText =
+            'Arrival: ${DateFormat('hh:mm a').format(estimatedArrivalTime!)}';
       } else {
         print('Error fetching directions: ${response.body}');
       }
@@ -155,6 +220,10 @@ class _MapboxPageState extends State<MapboxPage> {
       setState(() {
         isNavigating = true;
       });
+      _startTurnByTurnNavigation();
+    } else {
+      print('Error: Current position or destination is null');
+      // Optionally, show a dialog or snackbar to inform the user.
     }
   }
 
@@ -167,6 +236,22 @@ class _MapboxPageState extends State<MapboxPage> {
     }
   }
 
+  // Function to handle exit navigation
+  void _exitNavigation() async {
+    await flutterTts.stop(); // Stop any ongoing TTS
+    setState(() {
+      isNavigating = false;
+      selectedDestination = null; // Reset destination
+      directionsSteps.clear(); // Clear the directions
+      routeCoordinates.clear(); // Clear the route coordinates
+      currentStepIndex = 0; // Reset step index
+      currentInstruction = ''; // Reset instruction
+      etaText = ''; // Reset ETA
+      arrivalText = ''; // Reset arrival time
+    });
+  }
+
+  @override
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -250,13 +335,17 @@ class _MapboxPageState extends State<MapboxPage> {
                           ),
                           const SizedBox(height: 10),
                           ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                isNavigating = false;
-                              });
-                            },
+                            onPressed: _exitNavigation,
                             child: Text('Exit Navigation'),
                           ),
+                          // ElevatedButton(
+                          //   onPressed: () {
+                          //     setState(() {
+                          //       isNavigating = false;
+                          //     });
+                          //   },
+                          //   child: Text('Exit Navigation'),
+                          // ),
                         ],
                       ),
                     ),
