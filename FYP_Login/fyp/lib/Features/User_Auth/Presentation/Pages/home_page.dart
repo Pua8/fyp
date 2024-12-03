@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fyp/Features/User_Auth/Presentation/Pages/mapbox.dart';
 import 'package:fyp/Features/User_Auth/Presentation/Pages/user_profile.dart';
 import 'package:fyp/Features/User_Auth/Presentation/Pages/detection.dart'; // Import DetectionPage
 import 'package:fyp/Features/User_Auth/Presentation/Widgets/carousel.dart';
@@ -63,7 +64,7 @@ class HomePage extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const DetectionPage()),
+                  MaterialPageRoute(builder: (context) => const MapboxPage()),
                 );
               },
               child: Row(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:ui_web' as ui;
 import 'package:fyp/Features/App/Splash_Screen/splash_screen.dart';
 import 'package:fyp/Features/User_Auth/Presentation/Pages/login.dart';
 import 'package:fyp/Features/User_Auth/Presentation/Pages/sign_up_page.dart';
@@ -39,19 +40,20 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: Color(0xFF030924), // Global background color
         appBarTheme: AppBarTheme(
           backgroundColor: Color(0xFF030924), // AppBar color same as background
-          foregroundColor: Colors.white, // Text and icon color to white on appbar
+          foregroundColor:
+              Colors.white, // Text and icon color to white on appbar
         ),
       ),
       routes: {
         '/': (context) => SplashScreen(
               // Here, you can decide whether to show the LoginPage or HomePage based on user authentication
-              child: MapboxPage(),
+              child: HomePage(),
             ),
         '/login': (context) => LoginPage(),
         '/signUp': (context) => SignUpPage(),
         '/home': (context) => HomePage(),
         '/reset_password': (context) => ResetPasswordPage(),
-        '/detection': (context) => DetectionPage(),
+        // '/detection': (context) => DetectionPage(),
         '/mapbox': (context) => MapboxPage(),
       },
     );

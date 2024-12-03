@@ -6,7 +6,6 @@ import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:flutter_tts/flutter_tts.dart';
-import 'package:flutter/foundation.dart';
 
 class MapboxPage extends StatefulWidget {
   const MapboxPage({super.key});
@@ -19,22 +18,16 @@ class _MapboxPageState extends State<MapboxPage> {
   late FlutterTts flutterTts;
   late MapboxMapController mapController;
   Position? currentPosition;
+  Timer? _timer;
   String? selectedDestination;
   List<Map<String, dynamic>> destinationList = [];
-  List<LatLng> simulatedRoute = [
-    LatLng(37.7749, -122.4194), // Example: San Francisco
-    LatLng(37.7750, -122.4195),
-    LatLng(37.7751, -122.4196),
-    LatLng(37.7752, -122.4197),
-    // Add more points along the route...
-  ];
-
   List<LatLng> routeCoordinates = [];
   List<String> directionsSteps = [];
+  int _currentSimulatedIndex = 0;
   int currentStepIndex = 0;
   String? currentInstruction = '';
   bool isNavigating = false;
-
+  bool hasArrived = false;
   DateTime? estimatedArrivalTime;
   String? etaText = '';
   String? arrivalText = '';
@@ -48,8 +41,121 @@ class _MapboxPageState extends State<MapboxPage> {
 
   @override
   void dispose() {
+    _timer?.cancel(); // Cancel timer
     flutterTts.stop(); // Stop ongoing TTS operations
     super.dispose(); // Dispose of the TTS instance
+  }
+
+  // void _updateETA(Position currentPosition, double destLat, double destLng) {
+  //   final distanceRemaining = Geolocator.distanceBetween(
+  //     currentPosition.latitude,
+  //     currentPosition.longitude,
+  //     destLat,
+  //     destLng,
+  //   );
+
+  //   final speedInMetersPerSecond = currentPosition.speed; // speed in m/s
+  //   if (speedInMetersPerSecond > 0) {
+  //     final remainingTimeInSeconds = distanceRemaining / speedInMetersPerSecond;
+  //     final duration = Duration(seconds: remainingTimeInSeconds.toInt());
+
+  //     setState(() {
+  //       estimatedArrivalTime = DateTime.now().add(duration);
+  //       etaText = 'ETA: ${duration.inMinutes} min';
+  //       arrivalText =
+  //           'Arrival: ${DateFormat('hh:mm a').format(estimatedArrivalTime!)}';
+  //     });
+  //   }
+  // }
+
+  void _simulateDriving() {
+    if (_timer != null && _timer!.isActive) return;
+
+    _timer = Timer.periodic(Duration(seconds: 4), (timer) {
+      if (_currentSimulatedIndex < routeCoordinates.length) {
+        setState(() {
+          currentPosition = Position(
+            latitude: routeCoordinates[_currentSimulatedIndex].latitude,
+            longitude: routeCoordinates[_currentSimulatedIndex].longitude,
+            timestamp: DateTime.now(),
+            accuracy: 5.0,
+            altitude: 0.0,
+            heading: 0.0,
+            speed: 0.0,
+            speedAccuracy: 0.0,
+            altitudeAccuracy: 5.0,
+            headingAccuracy: 5.0,
+          );
+        });
+
+        // Calculate remaining distance from current position to destination
+        double remainingDistance = 0.0;
+        if (currentPosition != null) {
+          remainingDistance = Geolocator.distanceBetween(
+            currentPosition!.latitude,
+            currentPosition!.longitude,
+            routeCoordinates.last.latitude,
+            routeCoordinates.last.longitude,
+          );
+        }
+
+        // // Estimate remaining time (assuming average speed of 5 m/s)
+        // double remainingTimeInSeconds = remainingDistance / 5;
+        // Duration remainingDuration =
+        //     Duration(seconds: remainingTimeInSeconds.toInt());
+
+        // // Update ETA
+        // DateTime now = DateTime.now();
+        // DateTime newEstimatedArrivalTime = now.add(remainingDuration);
+
+        // setState(() {
+        //   etaText = 'ETA: ${remainingDuration.inMinutes} min';
+        //   arrivalText =
+        //       'Arrival: ${DateFormat('hh:mm a').format(newEstimatedArrivalTime)}';
+        // });
+
+        // Move to the next step if the user is close enough to the current step
+        final stepLocation = LatLng(
+          routeCoordinates[_currentSimulatedIndex].latitude,
+          routeCoordinates[_currentSimulatedIndex].longitude,
+        );
+
+        final distanceToNextStep = Geolocator.distanceBetween(
+          currentPosition!.latitude,
+          currentPosition!.longitude,
+          stepLocation.latitude,
+          stepLocation.longitude,
+        );
+
+        if (distanceToNextStep < 50) {
+          _updateStep();
+        }
+
+        // Update the camera position to simulate navigation
+        if (currentPosition != null) {
+          mapController.moveCamera(
+            CameraUpdate.newCameraPosition(
+              CameraPosition(
+                target: LatLng(
+                    currentPosition!.latitude, currentPosition!.longitude),
+                zoom: 16.5,
+                tilt: 45.0,
+                bearing: 0.0,
+              ),
+            ),
+          );
+        }
+
+        _currentSimulatedIndex++;
+      } else if (!hasArrived) {
+        // If destination is reached, announce arrival
+        setState(() {
+          currentInstruction = "You have arrived at your destination.";
+        });
+        _speakInstruction(currentInstruction!); // Final TTS instruction
+        _timer?.cancel();
+      }
+    });
   }
 
   Future<void> _getUserLocation() async {
@@ -73,9 +179,9 @@ class _MapboxPageState extends State<MapboxPage> {
           CameraPosition(
             target:
                 LatLng(currentPosition!.latitude, currentPosition!.longitude),
-            zoom: 15.0,
-            tilt: 60.0, // Ensure the tilt for 3D view
-            bearing: currentPosition!.heading ?? 0.0,
+            zoom: 16.5,
+            tilt: 45.0,
+            bearing: 0.0,
           ),
         ),
       );
@@ -85,7 +191,9 @@ class _MapboxPageState extends State<MapboxPage> {
         CameraUpdate.newCameraPosition(
           const CameraPosition(
             target: LatLng(0.0, 0.0),
-            zoom: 1.0,
+            zoom: 16.5,
+            tilt: 45.0,
+            bearing: 0.0,
           ),
         ),
       );
@@ -138,8 +246,8 @@ class _MapboxPageState extends State<MapboxPage> {
 
   Future<void> _speakInstruction(String instruction) async {
     await flutterTts.setLanguage("en-US");
-    await flutterTts.setPitch(1.0);
-    await flutterTts.setSpeechRate(1.0);
+    await flutterTts.setPitch(1.5);
+    await flutterTts.setSpeechRate(2.5);
     await flutterTts.speak(instruction);
   }
 
@@ -154,6 +262,16 @@ class _MapboxPageState extends State<MapboxPage> {
         currentPosition = position;
       });
 
+      // If the destination is set, update the ETA
+      if (selectedDestination != null) {
+        final destination = destinationList.firstWhere(
+          (element) => element['name'] == selectedDestination,
+          orElse: () => throw Exception('Destination not found'),
+        );
+        // _updateETA(position, destination['latitude'], destination['longitude']);
+      }
+
+      // Handle step updates
       if (directionsSteps.isNotEmpty) {
         final currentStep = directionsSteps[currentStepIndex];
         final stepLocation = LatLng(
@@ -178,9 +296,11 @@ class _MapboxPageState extends State<MapboxPage> {
         mapController.moveCamera(
           CameraUpdate.newCameraPosition(
             CameraPosition(
-              target: LatLng(position.latitude, position.longitude),
-              zoom: 16.5, // Adjust zoom level for navigation
-              tilt: 60.0, // Add tilt for a 3D-like view
+              target: LatLng(
+                  position.latitude, position.longitude), // Set user's location
+              zoom: 16.5,
+              tilt: 45.0,
+              bearing: 0.0,
             ),
           ),
         );
@@ -190,16 +310,21 @@ class _MapboxPageState extends State<MapboxPage> {
 
   void _updateStep() {
     if (currentStepIndex < directionsSteps.length - 1) {
-      setState(() {
-        currentStepIndex++;
-        currentInstruction = directionsSteps[currentStepIndex];
-      });
+      if (mounted) {
+        setState(() {
+          currentStepIndex++;
+          currentInstruction = directionsSteps[currentStepIndex];
+        });
+      }
       _speakInstruction(currentInstruction!); // Trigger TTS
     } else {
-      setState(() {
-        currentInstruction = "You have arrived at your destination.";
-      });
+      if (mounted) {
+        setState(() {
+          currentInstruction = "You have arrived at your destination.";
+        });
+      }
       _speakInstruction(currentInstruction!); // Final TTS instruction
+      _timer?.cancel(); // Cancel any ongoing timers
     }
   }
 
@@ -221,7 +346,6 @@ class _MapboxPageState extends State<MapboxPage> {
         final route = data['routes'][0]['geometry']['coordinates'];
         final steps = data['routes'][0]['legs'][0]['steps'];
 
-        // print('Steps: $steps'); // Check if steps are populated
         setState(() {
           directionsSteps = steps.map<String>((step) {
             var instruction = step['maneuver']['instruction'];
@@ -234,14 +358,8 @@ class _MapboxPageState extends State<MapboxPage> {
         routeCoordinates =
             route.map<LatLng>((coord) => LatLng(coord[1], coord[0])).toList();
 
-        mapController.addLine(
-          LineOptions(
-            geometry: routeCoordinates,
-            lineColor: "#007AFF",
-            lineWidth: 5.0,
-            lineOpacity: 1.0,
-          ),
-        );
+        // Start simulated movement once directions are fetched
+        _simulateDriving();
 
         // Get the duration (travel time) and distance from the API response
         final durationInSeconds = data['routes'][0]['duration']; // in seconds
@@ -251,7 +369,6 @@ class _MapboxPageState extends State<MapboxPage> {
         final duration = Duration(seconds: durationInSeconds.toInt());
         DateTime now = DateTime.now();
         estimatedArrivalTime = now.add(duration);
-        etaText = 'ETA: ${duration.inMinutes} min';
         arrivalText =
             'Arrival: ${DateFormat('hh:mm a').format(estimatedArrivalTime!)}';
       } else {
@@ -268,45 +385,81 @@ class _MapboxPageState extends State<MapboxPage> {
       return;
     }
 
-    try {
-      final destination = destinationList.firstWhere(
-        (element) => element['name'] == selectedDestination,
-        orElse: () {
-          throw Exception('Selected destination not found in the list.');
-        },
-      );
+    // Show confirmation dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Start Trip'),
+          content: Text(
+            'Heading to $selectedDestination',
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                // Cancel the trip
+                Navigator.of(context).pop();
+              },
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                // Proceed with starting the trip
+                Navigator.of(context).pop(); // Close the dialog
 
-      _getDirections(destination['latitude'], destination['longitude'])
-          .then((_) {
-        if (directionsSteps.isEmpty || routeCoordinates.isEmpty) {
-          print('Error: No directions or route data available.');
-          return;
-        }
-        setState(() {
-          isNavigating = true;
-        });
-        _startTurnByTurnNavigation();
-      });
-    } catch (e) {
-      print('Error: $e');
-    }
+                try {
+                  final destination = destinationList.firstWhere(
+                    (element) => element['name'] == selectedDestination,
+                    orElse: () {
+                      throw Exception(
+                          'Selected destination not found in the list.');
+                    },
+                  );
+
+                  _getDirections(
+                          destination['latitude'], destination['longitude'])
+                      .then((_) {
+                    if (directionsSteps.isEmpty || routeCoordinates.isEmpty) {
+                      print('Error: No directions or route data available.');
+                      return;
+                    }
+                    setState(() {
+                      isNavigating = true;
+                    });
+                    _startTurnByTurnNavigation();
+                  });
+                } catch (e) {
+                  print('Error: $e');
+                }
+              },
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.blue,
+              ),
+              child: Text(
+                'Yes',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
-
-  // void _startTrip() {
-  //   if (selectedDestination != null && currentPosition != null) {
-  //     final destination = destinationList
-  //         .firstWhere((element) => element['name'] == selectedDestination);
-
-  //     _getDirections(destination['latitude'], destination['longitude']);
-  //     setState(() {
-  //       isNavigating = true;
-  //     });
-  //     _startTurnByTurnNavigation();
-  //   } else {
-  //     print('Error: Current position or destination is null');
-  //     // Optionally, show a dialog or snackbar to inform the user.
-  //   }
-  // }
 
   void _nextStep() {
     if (currentStepIndex < directionsSteps.length - 1) {
@@ -319,6 +472,7 @@ class _MapboxPageState extends State<MapboxPage> {
 
   // Function to handle exit navigation
   void _exitNavigation() async {
+    _timer?.cancel();
     await flutterTts.stop(); // Stop any ongoing TTS
     setState(() {
       isNavigating = false;
@@ -337,8 +491,19 @@ class _MapboxPageState extends State<MapboxPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Mapbox Navigation'),
-        backgroundColor: Colors.black,
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+        title: Image.asset(
+          'lib/Features/User_Auth/Presentation/images/logo.png',
+          height: 50,
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.grey[900],
       ),
       body: isNavigating
           ? Stack(
@@ -350,13 +515,19 @@ class _MapboxPageState extends State<MapboxPage> {
                   initialCameraPosition: CameraPosition(
                     target: LatLng(currentPosition?.latitude ?? 0.0,
                         currentPosition?.longitude ?? 0.0),
-                    zoom: 15.0,
+                    zoom: 16.5,
+                    tilt: 45.0,
+                    bearing: 0.0,
                   ),
                   myLocationEnabled: true,
-                  myLocationTrackingMode: MyLocationTrackingMode.None,
-                  myLocationRenderMode: kIsWeb
-                      ? MyLocationRenderMode.NORMAL // Default for web
-                      : MyLocationRenderMode.COMPASS, // Adjust for mobile
+                  myLocationTrackingMode: MyLocationTrackingMode
+                      .TrackingCompass, // User heading view
+                  tiltGesturesEnabled:
+                      true, // Allow tilting for better navigation experience
+                  compassEnabled: true, // Show the compass
+                  // myLocationRenderMode: kIsWeb
+                  //     ? MyLocationRenderMode.NORMAL // Default for web
+                  //     : MyLocationRenderMode.COMPASS, // Adjust for mobile
                 ),
                 // myLocationTrackingMode: MyLocationTrackingMode.None,
                 Positioned(
@@ -370,70 +541,29 @@ class _MapboxPageState extends State<MapboxPage> {
                     child: Padding(
                       padding: const EdgeInsets.all(12.0),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
+                          Text(
+                            'Heading to $selectedDestination',
+                            style: const TextStyle(fontSize: 10),
+                          ),
+                          const SizedBox(height: 20),
                           Text(
                             currentInstruction ?? 'Fetching directions...',
                             style: const TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
+                                fontSize: 25, fontWeight: FontWeight.bold),
                           ),
-                          const SizedBox(height: 5),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              // Text(
-                              //   etaText ?? 'ETA: Loading...',
-                              //   style: const TextStyle(
-                              //       fontSize: 14, color: Colors.grey),
-                              // ),
-                              const Icon(Icons.directions_car,
-                                  color: Colors.blue),
-                            ],
+                          const SizedBox(height: 20),
+                          Text(
+                            arrivalText ?? 'Arrival: Calculating...',
+                            style: TextStyle(fontSize: 18, color: Colors.black),
                           ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 20,
-                  left: 20,
-                  right: 20,
-                  child: Card(
-                    elevation: 4,
-                    color: Colors.white,
-                    child: Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                etaText ?? 'ETA: Calculating...',
-                                style: TextStyle(
-                                    fontSize: 16, fontWeight: FontWeight.bold),
-                              ),
-                              Text(
-                                arrivalText ?? 'Arrival: Calculating...',
-                                style: TextStyle(
-                                    fontSize: 16, color: Colors.grey[700]),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 20),
                           ElevatedButton(
                             onPressed: _exitNavigation,
                             child: Text('Exit Navigation'),
                           ),
-                          // ElevatedButton(
-                          //   onPressed: () {
-                          //     setState(() {
-                          //       isNavigating = false;
-                          //     });
-                          //   },
-                          //   child: Text('Exit Navigation'),
-                          // ),
+                          const SizedBox(height: 5),
                         ],
                       ),
                     ),
@@ -451,7 +581,9 @@ class _MapboxPageState extends State<MapboxPage> {
                     initialCameraPosition: CameraPosition(
                       target: LatLng(currentPosition?.latitude ?? 0.0,
                           currentPosition?.longitude ?? 0.0),
-                      zoom: 14.0,
+                      zoom: 16.5,
+                      tilt: 45.0,
+                      bearing: 0.0,
                     ),
                     myLocationEnabled: true,
                   ),
