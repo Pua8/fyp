@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:mapbox_gl/mapbox_gl.dart';
 import 'dart:convert';
+import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -20,6 +21,14 @@ class _MapboxPageState extends State<MapboxPage> {
   Position? currentPosition;
   String? selectedDestination;
   List<Map<String, dynamic>> destinationList = [];
+  List<LatLng> simulatedRoute = [
+    LatLng(37.7749, -122.4194), // Example: San Francisco
+    LatLng(37.7750, -122.4195),
+    LatLng(37.7751, -122.4196),
+    LatLng(37.7752, -122.4197),
+    // Add more points along the route...
+  ];
+
   List<LatLng> routeCoordinates = [];
   List<String> directionsSteps = [];
   int currentStepIndex = 0;
@@ -195,7 +204,10 @@ class _MapboxPageState extends State<MapboxPage> {
   }
 
   Future<void> _getDirections(double destLat, double destLng) async {
-    if (currentPosition == null) return;
+    if (currentPosition == null) {
+      print('Error: Current position is null');
+      return;
+    }
 
     final accessToken =
         "pk.eyJ1IjoicHVhLXphYyIsImEiOiJjbTQ0YjI5YjAwaWhlMmtzZmkzOTEwNmMyIn0.XsV8HXy-GZabhruNLRCa5w";
@@ -251,20 +263,50 @@ class _MapboxPageState extends State<MapboxPage> {
   }
 
   void _startTrip() {
-    if (selectedDestination != null && currentPosition != null) {
-      final destination = destinationList
-          .firstWhere((element) => element['name'] == selectedDestination);
+    if (selectedDestination == null || currentPosition == null) {
+      print('Error: Selected destination or current position is null');
+      return;
+    }
 
-      _getDirections(destination['latitude'], destination['longitude']);
-      setState(() {
-        isNavigating = true;
+    try {
+      final destination = destinationList.firstWhere(
+        (element) => element['name'] == selectedDestination,
+        orElse: () {
+          throw Exception('Selected destination not found in the list.');
+        },
+      );
+
+      _getDirections(destination['latitude'], destination['longitude'])
+          .then((_) {
+        if (directionsSteps.isEmpty || routeCoordinates.isEmpty) {
+          print('Error: No directions or route data available.');
+          return;
+        }
+        setState(() {
+          isNavigating = true;
+        });
+        _startTurnByTurnNavigation();
       });
-      _startTurnByTurnNavigation();
-    } else {
-      print('Error: Current position or destination is null');
-      // Optionally, show a dialog or snackbar to inform the user.
+    } catch (e) {
+      print('Error: $e');
     }
   }
+
+  // void _startTrip() {
+  //   if (selectedDestination != null && currentPosition != null) {
+  //     final destination = destinationList
+  //         .firstWhere((element) => element['name'] == selectedDestination);
+
+  //     _getDirections(destination['latitude'], destination['longitude']);
+  //     setState(() {
+  //       isNavigating = true;
+  //     });
+  //     _startTurnByTurnNavigation();
+  //   } else {
+  //     print('Error: Current position or destination is null');
+  //     // Optionally, show a dialog or snackbar to inform the user.
+  //   }
+  // }
 
   void _nextStep() {
     if (currentStepIndex < directionsSteps.length - 1) {
@@ -315,7 +357,6 @@ class _MapboxPageState extends State<MapboxPage> {
                   myLocationRenderMode: kIsWeb
                       ? MyLocationRenderMode.NORMAL // Default for web
                       : MyLocationRenderMode.COMPASS, // Adjust for mobile
-                  
                 ),
                 // myLocationTrackingMode: MyLocationTrackingMode.None,
                 Positioned(
