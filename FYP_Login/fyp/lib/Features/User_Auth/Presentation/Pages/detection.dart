@@ -9,7 +9,7 @@ const String openRouteServiceApiKey =
     '5b3ce3597851110001cf62483b9c123314fc4b6fb68d9a9916852467'; // OpenRouteService token
 
 class DetectionPage extends StatefulWidget {
-  const DetectionPage({Key? key}) : super(key: key);
+  const DetectionPage({super.key});
 
   @override
   _DetectionPageState createState() => _DetectionPageState();

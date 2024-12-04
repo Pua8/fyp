@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class CarouselWidget extends StatefulWidget {
-  const CarouselWidget({Key? key}) : super(key: key);
+  const CarouselWidget({super.key});
 
   @override
   _CarouselWidgetState createState() => _CarouselWidgetState();
@@ -26,7 +26,7 @@ class _CarouselWidgetState extends State<CarouselWidget> {
   final List<String> imageUrls = [
     'lib/Features/User_Auth/Presentation/images/carousel_image1.jpg',
     'lib/Features/User_Auth/Presentation/images/carousel_image2.jpg',
-    'lib/Features/User_Auth/Presentation/images/carousel_image3.jpg', 
+    'lib/Features/User_Auth/Presentation/images/carousel_image3.jpg',
     'lib/Features/User_Auth/Presentation/images/carousel_image4.jpg',
   ];
 
@@ -70,10 +70,12 @@ class _CarouselWidgetState extends State<CarouselWidget> {
       mainAxisSize: MainAxisSize.min,
       children: [
         GestureDetector(
-          onTapDown: (_) => _stopAutoScroll(), // Stop scrolling when user interacts
-          onTapUp: (_) => _startAutoScroll(),  // Resume scrolling after interaction
+          onTapDown: (_) =>
+              _stopAutoScroll(), // Stop scrolling when user interacts
+          onTapUp: (_) =>
+              _startAutoScroll(), // Resume scrolling after interaction
           onHorizontalDragStart: (_) => _stopAutoScroll(), // Stop on drag start
-          onHorizontalDragEnd: (_) => _startAutoScroll(),  // Resume on drag end
+          onHorizontalDragEnd: (_) => _startAutoScroll(), // Resume on drag end
           child: SizedBox(
             height: 300,
             child: PageView.builder(

@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
-import 'dart:ui_web' as ui;
 import 'package:fyp/Features/App/Splash_Screen/splash_screen.dart';
 import 'package:fyp/Features/User_Auth/Presentation/Pages/login.dart';
 import 'package:fyp/Features/User_Auth/Presentation/Pages/sign_up_page.dart';
 import 'package:fyp/Features/User_Auth/Presentation/Pages/home_page.dart';
 import 'package:fyp/Features/User_Auth/Presentation/Pages/reset_password.dart';
-import 'package:fyp/Features/User_Auth/Presentation/Pages/detection.dart';
+import 'package:fyp/Features/User_Auth/Presentation/Pages/facial_detection.dart';
 import 'package:fyp/Features/User_Auth/Presentation/Pages/mapbox.dart';
 
 Future main() async {
@@ -47,7 +46,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => SplashScreen(
               // Here, you can decide whether to show the LoginPage or HomePage based on user authentication
-              child: HomePage(),
+              child: RealTimeFacialDetection(),
             ),
         '/login': (context) => LoginPage(),
         '/signUp': (context) => SignUpPage(),

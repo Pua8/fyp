@@ -59,7 +59,7 @@ class _ProfilePageState extends State<UserProfile> {
     );
 
     //Update firestore
-    if (newValue.trim().length > 0) {
+    if (newValue.trim().isNotEmpty) {
       //only update when there is something in the text field
       await userCollection.doc(currentUser.email).update({field: newValue});
     }
@@ -439,7 +439,8 @@ class _ProfilePageState extends State<UserProfile> {
                   child: ElevatedButton(
                     onPressed: () {
                       // Navigate to the Reset Password screen
-                      Navigator.of(context).pushReplacementNamed('/reset_password');
+                      Navigator.of(context)
+                          .pushReplacementNamed('/reset_password');
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
