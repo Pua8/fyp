@@ -18,7 +18,8 @@ class _SignUpPageState extends State<SignUpPage> {
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
   bool isSigningUp = false;
   bool _isPasswordVisible = false;
@@ -50,7 +51,8 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   void _validatePasswordMatch() {
-    if (_confirmPasswordController.text.trim() != _passwordController.text.trim()) {
+    if (_confirmPasswordController.text.trim() !=
+        _passwordController.text.trim()) {
       setState(() {
         passwordError = "Passwords do not match";
       });
