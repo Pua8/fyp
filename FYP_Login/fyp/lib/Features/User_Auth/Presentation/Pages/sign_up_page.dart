@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fyp/Features/User_Auth/firebase_auth_implementation/firebase_auth_services.dart';
 import 'package:fyp/Features/User_Auth/Presentation/Pages/login.dart';
 import 'package:fyp/global/common/toast.dart';
+import 'package:flutter/services.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -183,6 +184,13 @@ class _SignUpPageState extends State<SignUpPage> {
                     },
                   ),
                 ),
+                enableInteractiveSelection: false, // Disable text selection
+                onTap: () {
+                  Clipboard.setData(
+                      const ClipboardData(text: "")); // Clear clipboard data
+                },
+                buildCounter:
+                    null, // No paste actions will trigger in most cases
               ),
               SizedBox(height: 30),
               GestureDetector(
