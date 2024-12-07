@@ -228,7 +228,7 @@ class _LoginPageState extends State<LoginPage> {
     if (user != null) {
       if (user.emailVerified) {
         showToast(message: "User is successfully signed in");
-        Navigator.pushNamed(context, "/home");
+        Navigator.pushNamed(context, "/userguide");
       } else {
         showToast(message: "Please verify your email before logging in.");
       }
