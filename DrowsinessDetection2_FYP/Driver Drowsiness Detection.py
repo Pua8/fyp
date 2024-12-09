@@ -113,7 +113,7 @@ def process_eyes(frame, shape):
     cv2.putText(frame, "EAR: {:.2f}".format(ear), (850, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
     # Check if EAR is below the threshold
-    if ear < EYE_AR_THRESH:
+    if ear <= EYE_AR_THRESH:
         cv2.putText(frame, "Eyes Closed!", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
         if start_time is None:  # First time eyes are detected as closed
@@ -224,7 +224,7 @@ def play_alert_sound(file_path):
         print(f"[ERROR] Unable to play sound: {e}")
 
 if __name__ == "__main__":
-    EYE_AR_THRESH = 0.18
+    EYE_AR_THRESH = 0.2
     MOUTH_AR_THRESH = 0.65
     EYE_AR_CONSEC_FRAMES = 3
     COUNTER = 0
