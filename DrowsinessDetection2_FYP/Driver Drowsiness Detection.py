@@ -52,12 +52,11 @@ def process_frame(frame, gray, detector, predictor):
         shape = face_utils.shape_to_np(shape)
 
         process_landmarks(frame, shape)
-        process_eyes(frame, shape)
-        process_mouth(frame, shape)
+        process_eyes(frame, shape)  # Check eye conditions
+        process_mouth(frame, shape)  # Check mouth conditions
         process_head_pose(frame, shape, frame.shape)
 
     return frame
-
 
 def process_landmarks(frame, shape):
     image_points = np.zeros((6, 2), dtype="double")
@@ -87,12 +86,14 @@ def process_landmarks(frame, shape):
 from playsound import playsound  # Import playsound for playing audio
 import time  # For time tracking
 
-# Initialize global variables
-start_time = None  # Start time for when eyes are detected as closed
-alert_triggered = False  # Flag to avoid repeated alerts
+start_time_eyes = None  # Timer for eyes closed condition
+alert_triggered_eyes = False
+
+start_time_mouth = None  # Timer for mouth open condition
+alert_triggered_mouth = False
 
 def process_eyes(frame, shape):
-    global COUNTER, start_time, alert_triggered
+    global start_time_eyes, alert_triggered_eyes
 
     (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
     (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
@@ -116,27 +117,21 @@ def process_eyes(frame, shape):
     if ear <= EYE_AR_THRESH:
         cv2.putText(frame, "Eyes Closed!", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
-        if start_time is None:  # First time eyes are detected as closed
-            start_time = time.time()  # Record start time
+        if start_time_eyes is None:
+            start_time_eyes = time.time()
         else:
-            # Calculate how long the eyes have been closed
-            duration = time.time() - start_time
-            if duration >= 2:  # If eyes are closed for >= 3 seconds
-                if not alert_triggered:
-                    alert_triggered = True  # Avoid re-triggering alert
-                    cv2.putText(frame, "Drowsy! Alert Triggered!", (500, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-                    # Play alert sound
-                    sound_path = os.path.join("Sound", "AlertSound.wav")
-                    play_alert_sound(sound_path)
+            duration = time.time() - start_time_eyes
+            if duration >= 2 and not alert_triggered_eyes:
+                alert_triggered_eyes = True
+                cv2.putText(frame, "Drowsy! Eyes Alert Triggered!", (500, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                sound_path = os.path.join("Sound", "AlertSound.wav")
+                play_alert_sound(sound_path)
     else:
-        # Reset variables if eyes are open
-        start_time = None
-        alert_triggered = False
-        COUNTER = 0
-
+        start_time_eyes = None
+        alert_triggered_eyes = False
 
 def process_mouth(frame, shape):
-    global start_time, alert_triggered
+    global start_time_mouth, alert_triggered_mouth
 
     (mStart, mEnd) = (49, 68)
     mouth = shape[mStart:mEnd]
@@ -146,32 +141,21 @@ def process_mouth(frame, shape):
     cv2.drawContours(frame, [mouthHull], -1, (0, 255, 0), 1)
     cv2.putText(frame, "MAR: {:.2f}".format(mar), (650, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
-    # If the mouth is open (MAR > threshold), check the duration
     if mar > MOUTH_AR_THRESH:
         cv2.putText(frame, "Mouth Open!", (250, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
-        if start_time is None:  # Record the start time when the mouth first opens
-            start_time = time.time()
-            #print("Start time recorded!")  # Debug: check if start time is recorded
+        if start_time_mouth is None:
+            start_time_mouth = time.time()
         else:
-            # Calculate how long the mouth has been open
-            duration = time.time() - start_time
-            #print(f"Duration: {duration} seconds")  # Debug: check duration
-
-            if duration >= 1:
-                if not alert_triggered:
-                    alert_triggered = True  # Trigger the alert sound only once
-                    cv2.putText(frame, "Yawning! Alert Triggered!", (800, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
-                                (0, 0, 255), 2)
-                    # Play alert sound
-                    sound_path = os.path.join("Sound", "AlertSound.wav")
-                    play_alert_sound(sound_path)
+            duration = time.time() - start_time_mouth
+            if duration >= 6 and not alert_triggered_mouth:
+                alert_triggered_mouth = True
+                cv2.putText(frame, "Yawning! Mouth Alert Triggered!", (800, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                sound_path = os.path.join("Sound", "AlertSound.wav")
+                play_alert_sound(sound_path)
     else:
-        # If the mouth is closed, reset the timer
-        #if start_time is not None:
-            #print("Mouth closed, resetting timer")  # Debug: check if timer is being reset
-        start_time = None
-        alert_triggered = False
+        start_time_mouth = None
+        alert_triggered_mouth = False
 
 
 def process_head_pose(frame, shape, frame_shape):
@@ -224,7 +208,7 @@ def play_alert_sound(file_path):
         print(f"[ERROR] Unable to play sound: {e}")
 
 if __name__ == "__main__":
-    EYE_AR_THRESH = 0.2
+    EYE_AR_THRESH = 0.23
     MOUTH_AR_THRESH = 0.65
     EYE_AR_CONSEC_FRAMES = 3
     COUNTER = 0
