@@ -69,12 +69,12 @@ class HomePage extends StatelessWidget {
                   MaterialPageRoute(builder: (context) => const MapboxPage()),
                 );
 
-                // Start facial detection in the background
-                Future.microtask(() {
-                  RealTimeFacialDetection realTimeFacialDetection =
-                      RealTimeFacialDetection();
-                  realTimeFacialDetection.createState().initializeCamera();
-                });
+                // // Start facial detection in the background
+                // Future.microtask(() {
+                //   RealTimeFacialDetection realTimeFacialDetection =
+                //       RealTimeFacialDetection();
+                //   realTimeFacialDetection.createState().initializeCamera();
+                // });
               },
               child: Row(
                 mainAxisSize: MainAxisSize.min,

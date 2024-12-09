@@ -4,6 +4,7 @@ import 'package:mapbox_gl/mapbox_gl.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'package:http/http.dart' as http;
+import 'package:fyp/Features/User_Auth/Presentation/Pages/facial_detection.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
@@ -636,7 +637,18 @@ class _MapboxPageState extends State<MapboxPage> {
                   ),
                 ),
                 ElevatedButton(
-                  onPressed: selectedDestination != null ? _startTrip : null,
+                  onPressed: () {
+                    if (selectedDestination != null) {
+                      _startTrip();
+                    }
+
+                    // Start facial detection in the background
+                    Future.microtask(() {
+                      RealTimeFacialDetection realTimeFacialDetection =
+                          RealTimeFacialDetection();
+                      realTimeFacialDetection.createState().initializeCamera();
+                    });
+                  },
                   child: Text('Start Trip'),
                 ),
               ],
