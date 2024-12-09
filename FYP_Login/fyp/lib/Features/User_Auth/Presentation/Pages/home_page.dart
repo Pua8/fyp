@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fyp/Features/User_Auth/Presentation/Pages/mapbox.dart';
 import 'package:fyp/Features/User_Auth/Presentation/Pages/user_profile.dart';
-// Import DetectionPage
+import 'package:fyp/Features/User_Auth/Presentation/Pages/facial_detection.dart';
 import 'package:fyp/Features/User_Auth/Presentation/Widgets/carousel.dart';
 
 class HomePage extends StatelessWidget {
@@ -62,10 +62,18 @@ class HomePage extends StatelessWidget {
             ),
             child: TextButton(
               onPressed: () {
+                // Navigate to MapboxPage
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const MapboxPage()),
                 );
+
+                // Start facial detection in the background
+                Future.microtask(() {
+                  RealTimeFacialDetection realTimeFacialDetection =
+                      RealTimeFacialDetection();
+                  realTimeFacialDetection.createState().initializeCamera();
+                });
               },
               child: Row(
                 mainAxisSize: MainAxisSize.min,

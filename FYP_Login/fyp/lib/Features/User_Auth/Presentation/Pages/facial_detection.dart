@@ -28,7 +28,7 @@ class _RealTimeFacialDetectionState extends State<RealTimeFacialDetection> {
   @override
   void initState() {
     super.initState();
-    _initializeCamera();
+    initializeCamera();
   }
 
   Future<Map<String, dynamic>?> _sendImageToBackend(
@@ -91,7 +91,7 @@ class _RealTimeFacialDetectionState extends State<RealTimeFacialDetection> {
     }
   }
 
-  Future<void> _initializeCamera() async {
+  Future<void> initializeCamera() async {
     try {
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
@@ -106,7 +106,7 @@ class _RealTimeFacialDetectionState extends State<RealTimeFacialDetection> {
       );
 
       await _cameraController!.initialize();
-      _startDetectionWeb();
+      startDetectionWeb();
     } catch (e) {
       debugPrint('Error initializing camera: $e');
     }
@@ -158,7 +158,7 @@ class _RealTimeFacialDetectionState extends State<RealTimeFacialDetection> {
     }
   }
 
-  Future<void> _startDetectionWeb() async {
+  Future<void> startDetectionWeb() async {
     await startImageStreamWeb((html.VideoElement videoElement) async {
       final html.CanvasElement canvas = html.CanvasElement();
 
