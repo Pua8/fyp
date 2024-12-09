@@ -28,13 +28,12 @@ detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat')
 
 # Define global thresholds
-EYE_AR_THRESH = 0.2
+EYE_AR_THRESH = 0.23
 MOUTH_AR_THRESH = 0.65
 
-# Define timers for eye and mouth
-eye_start_time = None
-mouth_start_time = None
-
+# Define timers for eye and mouth detection
+eye_start_time = None  # Timer for eyes closed detection
+mouth_start_time = None  # Timer for mouth open detection
 
 # Helper function for detecting drowsiness in the frame
 def detect_drowsiness_in_image(image: Image):
@@ -73,7 +72,7 @@ def detect_drowsiness_in_image(image: Image):
                 eye_start_time = time.time()
             else:
                 duration = time.time() - eye_start_time
-                if duration >= 2:  # Eyes closed for 3 seconds
+                if duration >= 2:  # Eyes closed for 2 seconds
                     eyes_closed_detected = True
         else:
             eye_start_time = None  # Reset timer if eyes are open
@@ -89,7 +88,7 @@ def detect_drowsiness_in_image(image: Image):
                 mouth_start_time = time.time()
             else:
                 duration = time.time() - mouth_start_time
-                if duration >= 1:  # Mouth open for 1 second
+                if duration >= 2:  # Mouth open for 2 seconds
                     mouth_open_detected = True
         else:
             mouth_start_time = None  # Reset timer if mouth is closed

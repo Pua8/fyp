@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'dart:html' as html;
 import 'dart:typed_data';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart'; // For kIsWeb
 import 'package:camera/camera.dart'; // For mobile platforms
 import 'package:camera_web/camera_web.dart'; // For web platform
@@ -20,6 +21,8 @@ class RealTimeFacialDetection extends StatefulWidget {
 class _RealTimeFacialDetectionState extends State<RealTimeFacialDetection> {
   CameraController? _cameraController;
   bool _isDetecting = false;
+  AudioPlayer _audioPlayer = AudioPlayer();
+  bool _isAlarmPlaying = false;
   final String _apiUrl = 'http://localhost:8000';
 
   @override
@@ -109,21 +112,6 @@ class _RealTimeFacialDetectionState extends State<RealTimeFacialDetection> {
     }
   }
 
-  // Future<Map<String, dynamic>?> _sendImageToBackend(
-  //     Uint8List imageBytes) async {
-  //   // Replace with your actual API call
-  //   // Example:
-  //   final response = await http.post(
-  //     Uri.parse('https://your-backend-endpoint.com/detect'),
-  //     headers: {'Content-Type': 'application/octet-stream'},
-  //     body: imageBytes,
-  //   );
-  //   if (response.statusCode == 200) {
-  //     return json.decode(response.body);
-  //   }
-  //   return null;
-  // }
-
   Future<Uint8List> _convertBlobToUint8List(html.Blob blob) async {
     final reader = html.FileReader();
     final completer = Completer<Uint8List>(); // Ensure dart:async is imported
@@ -136,53 +124,82 @@ class _RealTimeFacialDetectionState extends State<RealTimeFacialDetection> {
 
   static int HAVE_ENOUGH_DATA = 4;
 
+  Future<void> _playAlarm() async {
+    if (!_isAlarmPlaying) {
+      _isAlarmPlaying = true;
+      try {
+        if (kIsWeb) {
+          // Use html.AudioElement for web
+          final audio = html.AudioElement()
+            ..src = 'lib/Features/User_Auth/Presentation/sound/AlertSound.wav'
+            ..autoplay = true;
+          audio.play();
+        } else {
+          // Use AssetSource for mobile
+          await _audioPlayer.play(AssetSource(
+              'lib/Features/User_Auth/Presentation/sound/AlertSound.wav'));
+        }
+      } catch (e) {
+        debugPrint('Error playing alarm: $e');
+      }
+    }
+  }
+
+  Future<void> _stopAlarm() async {
+    if (_isAlarmPlaying) {
+      _isAlarmPlaying = false;
+      if (kIsWeb) {
+        // Use JavaScript to stop all audio elements
+        final script = html.document.querySelector('audio');
+        script?.remove(); // Remove audio element to stop playback
+      } else {
+        await _audioPlayer.stop();
+      }
+    }
+  }
+
   Future<void> _startDetectionWeb() async {
     await startImageStreamWeb((html.VideoElement videoElement) async {
       final html.CanvasElement canvas = html.CanvasElement();
 
-      // Set canvas dimensions after video metadata is loaded
       canvas.width = videoElement.videoWidth;
       canvas.height = videoElement.videoHeight;
       final ctx = canvas.getContext('2d') as html.CanvasRenderingContext2D;
 
-      // Periodically process frames using Timer.periodic
       Timer.periodic(Duration(milliseconds: 500), (timer) async {
         if (_isDetecting ||
             videoElement.videoWidth == 0 ||
             videoElement.videoHeight == 0) {
-          // Skip processing if video is not ready
           return;
         }
 
         _isDetecting = true;
         try {
-          // Draw the current video frame to the canvas
           ctx.drawImage(videoElement, 0, 0);
 
-          // Get the image data as a JPEG
           final blob = await canvas.toBlob('image/jpeg');
 
           if (blob != null) {
             final imageBytes = await _convertBlobToUint8List(blob);
 
-            // Send the image to the backend for analysis
             final result = await _sendImageToBackend(imageBytes);
 
-            // Display results
             if (result != null) {
-              if (result['mouth_open'] == true &&
-                  result['eyes_closed'] == false) {
-                debugPrint('Mouth open!');
-              } else if (result['eyes_closed'] == true &&
-                  result['mouth_open'] == false) {
-                debugPrint('Eyes closed!');
-              } else if (result['mouth_open'] == true &&
-                  result['eyes_closed'] == true) {
-                debugPrint('Both mouth open and eyes closed detected!');
-              }
-
+              // if (result['mouth_open'] == true &&
+              //     result['eyes_closed'] == false) {
+              //   debugPrint('Mouth open!');
+              // } else if (result['eyes_closed'] == true &&
+              //     result['mouth_open'] == false) {
+              //   debugPrint('Eyes closed!');
+              // } else if (result['mouth_open'] == true &&
+              //     result['eyes_closed'] == true) {
+              //   debugPrint('Both mouth open and eyes closed detected!');
+              // }
               if (result['alert_triggered'] == true) {
                 debugPrint('Drowsiness detected!');
+                _playAlarm();
+              } else {
+                _stopAlarm();
               }
             }
           } else {
@@ -196,63 +213,6 @@ class _RealTimeFacialDetectionState extends State<RealTimeFacialDetection> {
       });
     });
   }
-
-  // void _startDetectionWeb() async {
-  //   // Ensure we are running on the web
-  //   if (!kIsWeb) {
-  //     debugPrint('This function is only available on the web.');
-  //     return;
-  //   }
-
-  //   Future<Uint8List> _convertCameraImageToJpeg(CameraImage image) async {
-  //     // Convert YUV420 CameraImage to JPEG format
-  //     final List<int> bytes = [];
-
-  //     for (final Plane plane in image.planes) {
-  //       bytes.addAll(plane.bytes);
-  //     }
-
-  //     return Uint8List.fromList(bytes);
-  //   }
-
-  //   void _startDetection() {
-  //     _cameraController!.startImageStream((CameraImage image) async {
-  //       if (_isDetecting) return;
-  //       _isDetecting = true;
-
-  //       try {
-  //         // Convert CameraImage to a format suitable for API request
-  //         final imageBytes = await _convertCameraImageToJpeg(image);
-
-  //         // Send the image to the backend for drowsiness detection
-  //         final result = await _sendImageToBackend(imageBytes);
-
-  //         // Display result in debug console or UI
-  //         if (result != null) {
-  //           if (result['mouth_open'] == true) {
-  //             debugPrint('Mouth open!');
-  //           }
-  //           if (result['eyes_closed'] == true) {
-  //             debugPrint('Eyes closed!');
-  //           }
-  //           if (result['alert_triggered'] == true) {
-  //             debugPrint('Drowsiness detected!');
-  //           }
-  //         }
-  //       } catch (e) {
-  //         debugPrint('Error: $e');
-  //       } finally {
-  //         _isDetecting = false;
-  //       }
-  //     });
-  //   }
-
-  //   @override
-  //   void dispose() {
-  //     _cameraController?.dispose();
-  //     super.dispose();
-  //   }
-  // }
 
   @override
   Widget build(BuildContext context) {
