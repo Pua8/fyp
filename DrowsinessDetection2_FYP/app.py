@@ -28,12 +28,13 @@ detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat')
 
 # Define global thresholds
-EYE_AR_THRESH = 0.18
+EYE_AR_THRESH = 0.2
 MOUTH_AR_THRESH = 0.65
 
 # Define timers for eye and mouth
 eye_start_time = None
 mouth_start_time = None
+
 
 # Helper function for detecting drowsiness in the frame
 def detect_drowsiness_in_image(image: Image):
@@ -49,11 +50,15 @@ def detect_drowsiness_in_image(image: Image):
     # Detect faces
     rects = detector(gray, 0)
 
+    # Initialize flags for detecting drowsiness causes
+    eyes_closed_detected = False
+    mouth_open_detected = False
+
     for rect in rects:
         shape = predictor(gray, rect)
         shape = face_utils.shape_to_np(shape)
 
-        # Eye Aspect Ratio (EAR)
+        # Eye Aspect Ratio (EAR) for closed eyes detection
         (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
         (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
         leftEye = shape[lStart:lEnd]
@@ -62,33 +67,41 @@ def detect_drowsiness_in_image(image: Image):
         rightEAR = eye_aspect_ratio(rightEye)
         ear = (leftEAR + rightEAR) / 2.0
 
-        # Check if EAR is below threshold indicating closed eyes
-        if ear < EYE_AR_THRESH:
+        # Detect if eyes are closed for a certain duration
+        if ear <= EYE_AR_THRESH:
             if eye_start_time is None:
                 eye_start_time = time.time()
             else:
                 duration = time.time() - eye_start_time
-                if duration >= 3:  # 3 seconds of eye closure
-                    return True  # Drowsiness detected due to eyes
+                if duration >= 2:  # Eyes closed for 3 seconds
+                    eyes_closed_detected = True
         else:
-            eye_start_time = None  # Reset if eyes are open
+            eye_start_time = None  # Reset timer if eyes are open
 
-        # Mouth Aspect Ratio (MAR)
-        (mStart, mEnd) = (49, 68)
+        # Mouth Aspect Ratio (MAR) for yawning detection
+        (mStart, mEnd) = (49, 68)  # Indices for mouth landmarks
         mouth = shape[mStart:mEnd]
         mar = mouth_aspect_ratio(mouth)
 
+        # Detect if mouth is open for a certain duration
         if mar > MOUTH_AR_THRESH:
             if mouth_start_time is None:
                 mouth_start_time = time.time()
             else:
                 duration = time.time() - mouth_start_time
-                if duration >= 1:  # 1 second of yawning
-                    return True  # Drowsiness detected due to yawning
+                if duration >= 1:  # Mouth open for 1 second
+                    mouth_open_detected = True
         else:
-            mouth_start_time = None  # Reset if mouth is closed
+            mouth_start_time = None  # Reset timer if mouth is closed
 
-    return False  # No drowsiness detected
+    # Determine if alert is triggered by either or both conditions
+    alert_triggered = eyes_closed_detected or mouth_open_detected
+
+    return {
+        "alert_triggered": alert_triggered,
+        "eyes_closed": eyes_closed_detected,
+        "mouth_open": mouth_open_detected,
+    }
 
 
 # Endpoint to handle drowsiness detection
@@ -101,9 +114,10 @@ async def detect_drowsiness(file: UploadFile = File(...)):
         image = Image.open(io.BytesIO(image_data))
 
         # Detect drowsiness
-        drowsiness_detected = detect_drowsiness_in_image(image)
+        result = detect_drowsiness_in_image(image)
 
-        return JSONResponse(content={"alert_triggered": drowsiness_detected})
+        # Return detailed response
+        return JSONResponse(content=result)
 
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)

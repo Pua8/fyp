@@ -121,7 +121,7 @@ def process_eyes(frame, shape):
         else:
             # Calculate how long the eyes have been closed
             duration = time.time() - start_time
-            if duration >= 3:  # If eyes are closed for >= 3 seconds
+            if duration >= 2:  # If eyes are closed for >= 3 seconds
                 if not alert_triggered:
                     alert_triggered = True  # Avoid re-triggering alert
                     cv2.putText(frame, "Drowsy! Alert Triggered!", (500, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)

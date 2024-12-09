@@ -36,7 +36,7 @@ class _RealTimeFacialDetectionState extends State<RealTimeFacialDetection> {
             ..files.add(http.MultipartFile.fromBytes('file', imageBytes,
                 filename: 'frame.jpg'));
 
-      debugPrint('Sending request to $_apiUrl...');
+      // debugPrint('Sending request to $_apiUrl...');
       final response = await request.send();
 
       if (response.statusCode == 200) {
@@ -134,7 +134,7 @@ class _RealTimeFacialDetectionState extends State<RealTimeFacialDetection> {
     return completer.future;
   }
 
-  static int HAVE_ENOUGH_DATA = 4; // Add this at the top of your file
+  static int HAVE_ENOUGH_DATA = 4;
 
   Future<void> _startDetectionWeb() async {
     await startImageStreamWeb((html.VideoElement videoElement) async {
@@ -150,7 +150,7 @@ class _RealTimeFacialDetectionState extends State<RealTimeFacialDetection> {
         if (_isDetecting ||
             videoElement.videoWidth == 0 ||
             videoElement.videoHeight == 0) {
-          debugPrint('Video not ready or dimensions are zero. Skipping frame.');
+          // Skip processing if video is not ready
           return;
         }
 
@@ -170,8 +170,17 @@ class _RealTimeFacialDetectionState extends State<RealTimeFacialDetection> {
 
             // Display results
             if (result != null) {
-              if (result['mouth_open'] == true) debugPrint('Mouth open!');
-              if (result['eyes_closed'] == true) debugPrint('Eyes closed!');
+              if (result['mouth_open'] == true &&
+                  result['eyes_closed'] == false) {
+                debugPrint('Mouth open!');
+              } else if (result['eyes_closed'] == true &&
+                  result['mouth_open'] == false) {
+                debugPrint('Eyes closed!');
+              } else if (result['mouth_open'] == true &&
+                  result['eyes_closed'] == true) {
+                debugPrint('Both mouth open and eyes closed detected!');
+              }
+
               if (result['alert_triggered'] == true) {
                 debugPrint('Drowsiness detected!');
               }
