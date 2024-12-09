@@ -16,50 +16,41 @@ class UserGuidePage extends StatelessWidget {
               width: 100,
               height: 150,
             ),
+            const SizedBox(height: 20),
+
             // Introduction Section
             SectionTitle(title: "Introduction"),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8.0),
-              child: Text(
-                "Welcome to the Drowsiness Detection System! This system is designed to help monitor your level of alertness while driving or performing other tasks that require attention. It uses camera input to detect signs of drowsiness and provides notifications to help you stay safe on the road.",
-                style: TextStyle(fontSize: 16, color: Colors.white),
-              ),
+            const InfoText(
+              text:
+                  "Welcome to the Drowsiness Detection System! This system helps monitor your alertness while driving or performing tasks requiring attention. Using camera input, it detects signs of drowsiness and provides notifications to ensure your safety on the road.",
             ),
             const Divider(),
-
+            const SizedBox(height: 20),
             // How to Use Section
             SectionTitle(title: "How to Use the System"),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8.0),
-              child: Text(
-                "1. Make sure the system is properly set up on your device.\n\n"
-                "2. Ensure the camera or sensor is placed in an optimal position to monitor your facial features or eye movement.\n\n"
-                "3. Follow the on-screen prompts to begin the drowsiness detection.\n\n"
-                "4. The system will monitor your facial features and alert you if any signs of drowsiness are detected.\n\n"
-                "5. In case of an alert, take immediate action such as pulling over and resting before continuing your task.",
-                style: TextStyle(fontSize: 16, color: Colors.white),
-              ),
-            ),
+            const InfoList(items: [
+              "Place the camera in an optimal position to monitor your facial features.",
+              "Follow the on-screen prompts to begin the drowsiness detection.",
+              "The system will monitor your facial features and alert you if signs of drowsiness are detected.",
+              "If alerted, take immediate action like pulling over and resting before continuing.",
+            ]),
             const Divider(),
+            const SizedBox(height: 20),
 
             // Disclaimer Section
             SectionTitle(title: "Disclaimer"),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8.0),
-              child: Text(
-                "1. This system is designed to assist in detecting drowsiness, but it is not a replacement for professional judgment or caution. The system is not infallible and may produce false positives or false negatives.\n\n"
-                "2. The system should not be relied upon solely to determine if you are fit to continue driving or performing tasks. Always prioritize your own alertness and well-being.\n\n"
-                "3. The developers are not responsible for any accidents or incidents that occur due to improper use or over-reliance on the system.\n\n"
-                "4. This system is only effective when used correctly and within the recommended usage guidelines.",
-                style: TextStyle(fontSize: 16, color: Colors.white),
-              ),
-            ),
+            const InfoList(items: [
+              "This system assists in detecting drowsiness but is not a substitute for professional judgment or caution.",
+              "It may produce false positives or false negatives and should not be solely relied upon.",
+              "The developers are not responsible for incidents due to improper use or over-reliance on the system.",
+              "The system is only effective when used correctly and within the recommended guidelines.",
+            ]),
             const Divider(),
+            const SizedBox(height: 20),
 
             // Navigation Button to Next Page
             const SizedBox(height: 20),
             Center(
-              // Centering the button
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.push(
@@ -98,11 +89,50 @@ class SectionTitle extends StatelessWidget {
       child: Text(
         title,
         style: const TextStyle(
-          fontSize: 22,
+          fontSize: 30,
           fontWeight: FontWeight.bold,
           color: Colors.blue,
         ),
       ),
+    );
+  }
+}
+
+class InfoText extends StatelessWidget {
+  final String text;
+  const InfoText({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 20, color: Colors.white),
+      ),
+    );
+  }
+}
+
+class InfoList extends StatelessWidget {
+  final List<String> items;
+  const InfoList({required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: items
+          .map(
+            (item) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4.0),
+              child: Text(
+                "• $item",
+                style: const TextStyle(fontSize: 20, color: Colors.white),
+              ),
+            ),
+          )
+          .toList(),
     );
   }
 }
