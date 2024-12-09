@@ -3,6 +3,7 @@ import 'package:fyp/Features/User_Auth/Presentation/Pages/mapbox.dart';
 import 'package:fyp/Features/User_Auth/Presentation/Pages/user_profile.dart';
 import 'package:fyp/Features/User_Auth/Presentation/Pages/facial_detection.dart';
 import 'package:fyp/Features/User_Auth/Presentation/Widgets/carousel.dart';
+import 'package:fyp/Features/User_Auth/Presentation/Pages/user_guide.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -92,7 +93,26 @@ class HomePage extends StatelessWidget {
                       color: Colors.white,
                     ),
                   ),
+                  SizedBox(height: 20),
                 ],
+              ),
+            ),
+          ),
+          SizedBox(height: 200),
+          InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const UserGuidePage()),
+              );
+            },
+            child: Text(
+              'User Guide',
+              style: TextStyle(
+                color: Colors.blue,
+                decoration: TextDecoration.underline,
+                decorationColor: Colors.blue,
+                fontSize: 20,
               ),
             ),
           ),
