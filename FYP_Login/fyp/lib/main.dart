@@ -48,7 +48,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => SplashScreen(
               // Here, you can decide whether to show the LoginPage or HomePage based on user authentication
-              child: MapboxPage(),
+              child: LoginPage(),
             ),
         '/login': (context) => LoginPage(),
         '/signUp': (context) => SignUpPage(),
@@ -58,7 +58,6 @@ class MyApp extends StatelessWidget {
         '/realtime': (context) => RealTimeFacialDetection(),
         // '/detection': (context) => DetectionPage(),
         '/mapbox': (context) => MapboxPage(),
-        // '/tripHistory': (context) => TripHistoryPage(tripName: "Sample Trip"),
       },
     );
   }
