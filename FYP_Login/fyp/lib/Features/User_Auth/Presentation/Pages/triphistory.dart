@@ -1,7 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:fyp/Features/User_Auth/Presentation/Pages/home_page.dart';
+import 'package:fyp/Features/User_Auth/Presentation/Pages/mapbox.dart';
+import 'package:intl/intl.dart';
 
 class TripHistoryPage extends StatefulWidget {
-  const TripHistoryPage({super.key});
+  final String? tripName;
+  final double distance;
+  final DateTime? dateTime;
+  final int drowsinessCount;
+
+  const TripHistoryPage(
+      {super.key,
+      required this.tripName,
+      required this.distance,
+      required this.dateTime,
+      required this.drowsinessCount});
 
   @override
   State<TripHistoryPage> createState() => _TripHistoryPageState();
@@ -55,8 +68,11 @@ class _TripHistoryPageState extends State<TripHistoryPage> {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          '2024-12-11 14:30',
+                        Text(
+                          widget.dateTime != null
+                              ? DateFormat('yyyy MMMM dd HH:mm:ss')
+                                  .format(widget.dateTime!)
+                              : 'No Date Provided',
                           style: TextStyle(
                             fontSize: 16,
                             color: Colors.white70,
@@ -76,30 +92,11 @@ class _TripHistoryPageState extends State<TripHistoryPage> {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'Kuala Lumpur City Center',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.white70,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Divider(color: Colors.white24, thickness: 1),
-                    // Distance
-                    Column(
-                      children: [
-                        const Text(
-                          'Distance',
-                          style: TextStyle(
-                            fontSize: 20,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          '25 km',
-                          style: TextStyle(
+                        // Use widget.tripName here
+                        Text(
+                          widget.tripName ?? "No Destination Provided",
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
                             fontSize: 16,
                             color: Colors.white70,
                           ),
@@ -118,8 +115,8 @@ class _TripHistoryPageState extends State<TripHistoryPage> {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          '3 times',
+                        Text(
+                          widget.drowsinessCount.toString(),
                           style: TextStyle(
                             fontSize: 16,
                             color: Colors.white70,
@@ -129,11 +126,13 @@ class _TripHistoryPageState extends State<TripHistoryPage> {
                     ),
                     const SizedBox(height: 20),
                     ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                      ),
                       onPressed: () {
-                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => HomePage(),
+                          ),
+                        );
                       },
                       child: const Text('Close'),
                     ),

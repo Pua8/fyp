@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'dart:html' as html;
+import 'globals.dart';
 import 'dart:typed_data';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart'; // For kIsWeb
@@ -198,6 +199,7 @@ class _RealTimeFacialDetectionState extends State<RealTimeFacialDetection> {
               if (result['alert_triggered'] == true) {
                 debugPrint('Drowsiness detected!');
                 _playAlarm();
+                drowsinessCounter++;
               } else {
                 _stopAlarm();
               }

@@ -8,6 +8,7 @@ import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:fyp/Features/User_Auth/Presentation/Pages/facial_detection.dart';
 import 'package:intl/intl.dart';
+import 'globals.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
 class MapboxPage extends StatefulWidget {
@@ -26,9 +27,11 @@ class _MapboxPageState extends State<MapboxPage> {
   List<Map<String, dynamic>> destinationList = [];
   List<LatLng> routeCoordinates = [];
   List<String> directionsSteps = [];
+  double distance = 0.0;
   int _currentSimulatedIndex = 0;
   int currentStepIndex = 0;
   String? currentInstruction = '';
+  DateTime? currentDateTime;
   bool isNavigating = false;
   bool hasArrived = false;
   DateTime? estimatedArrivalTime;
@@ -220,7 +223,6 @@ class _MapboxPageState extends State<MapboxPage> {
           double lat = feature['geometry']['coordinates'][1];
           double lng = feature['geometry']['coordinates'][0];
 
-          double distance = 0.0;
           if (currentPosition != null) {
             distance = Geolocator.distanceBetween(currentPosition!.latitude,
                 currentPosition!.longitude, lat, lng);
@@ -430,6 +432,8 @@ class _MapboxPageState extends State<MapboxPage> {
                     },
                   );
 
+                  currentDateTime = DateTime.now();
+
                   _getDirections(
                           destination['latitude'], destination['longitude'])
                       .then((_) {
@@ -475,6 +479,26 @@ class _MapboxPageState extends State<MapboxPage> {
 
   // Function to handle exit navigation
   void _exitNavigation() async {
+    final destinationToPass = selectedDestination; // Save the current value
+    final double distanceToPass = distance;
+    final dateTimeToPass = currentDateTime;
+    final int drowsinessCountToPass = drowsinessCounter;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TripHistoryPage(
+            tripName: destinationToPass ??
+                "Unknown Destination", // Use a default value if null
+            distance: distanceToPass,
+            dateTime: dateTimeToPass,
+            drowsinessCount: drowsinessCountToPass),
+      ),
+    );
+
+    drowsinessCounter = 0;
+    debugPrint("Drowsiness Counter (after passing): $drowsinessCounter");
+
     _timer?.cancel();
     await flutterTts.stop(); // Stop any ongoing TTS
     setState(() {
@@ -487,10 +511,6 @@ class _MapboxPageState extends State<MapboxPage> {
       etaText = ''; // Reset ETA
       arrivalText = ''; // Reset arrival time
     });
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const TripHistoryPage()),
-    );
   }
 
   @override
