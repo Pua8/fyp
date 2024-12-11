@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:fyp/Features/User_Auth/Presentation/Pages/triphistory.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:mapbox_gl/mapbox_gl.dart';
 import 'dart:convert';
+import 'package:fyp/Features/User_Auth/Presentation/Pages/user_guide.dart';
 import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:fyp/Features/User_Auth/Presentation/Pages/facial_detection.dart';
@@ -485,6 +487,10 @@ class _MapboxPageState extends State<MapboxPage> {
       etaText = ''; // Reset ETA
       arrivalText = ''; // Reset arrival time
     });
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const TripHistoryPage()),
+    );
   }
 
   @override
