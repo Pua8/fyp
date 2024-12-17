@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:fyp/Features/User_Auth/Presentation/Pages/home_page.dart';
-import 'package:fyp/Features/User_Auth/Presentation/Pages/mapbox.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class TripHistoryPage extends StatefulWidget {
   final String? tripName;
-  final double distance;
   final DateTime? dateTime;
   final int drowsinessCount;
 
   const TripHistoryPage(
       {super.key,
       required this.tripName,
-      required this.distance,
       required this.dateTime,
       required this.drowsinessCount});
 
@@ -21,6 +21,34 @@ class TripHistoryPage extends StatefulWidget {
 }
 
 class _TripHistoryPageState extends State<TripHistoryPage> {
+  // Upload Trip History to Firestore
+  Future<void> uploadTripHistory() async {
+    final userEmail = FirebaseAuth.instance.currentUser?.email;
+
+    if (userEmail == null) {
+      Fluttertoast.showToast(msg: "User not logged in!");
+      return;
+    }
+
+    final firestore = FirebaseFirestore.instance;
+    final tripHistoryRef =
+        firestore.collection('users').doc(userEmail).collection('tripHistory');
+
+    try {
+      await tripHistoryRef.add({
+        'tripName': widget.tripName ?? 'No Destination Provided',
+        'dateTime': widget.dateTime?.toIso8601String() ??
+            DateTime.now().toIso8601String(),
+        'drowsinessCount': widget.drowsinessCount,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      // Fluttertoast.showToast(msg: "Trip history uploaded successfully!");
+    } catch (e) {
+      Fluttertoast.showToast(msg: "Failed to upload trip history: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -126,13 +154,23 @@ class _TripHistoryPageState extends State<TripHistoryPage> {
                     ),
                     const SizedBox(height: 20),
                     ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => HomePage(),
-                          ),
-                        );
+                      onPressed: () async {
+                        // Upload trip history
+                        await uploadTripHistory();
+
+                        // Show a toast message
+                        Fluttertoast.showToast(
+                            msg: "Thank you and have a nice day!");
+
+                        // Navigate to the HomePage
+                        Future.delayed(const Duration(milliseconds: 500), () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => HomePage(),
+                            ),
+                          );
+                        });
                       },
                       child: const Text('Close'),
                     ),

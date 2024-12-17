@@ -490,7 +490,6 @@ class _MapboxPageState extends State<MapboxPage> {
         builder: (context) => TripHistoryPage(
             tripName: destinationToPass ??
                 "Unknown Destination", // Use a default value if null
-            distance: distanceToPass,
             dateTime: dateTimeToPass,
             drowsinessCount: drowsinessCountToPass),
       ),
