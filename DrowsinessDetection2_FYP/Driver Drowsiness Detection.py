@@ -148,7 +148,7 @@ def process_mouth(frame, shape):
             start_time_mouth = time.time()
         else:
             duration = time.time() - start_time_mouth
-            if duration >= 6 and not alert_triggered_mouth:
+            if duration >= 5 and not alert_triggered_mouth:
                 alert_triggered_mouth = True
                 cv2.putText(frame, "Yawning! Mouth Alert Triggered!", (800, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                 sound_path = os.path.join("Sound", "AlertSound.wav")

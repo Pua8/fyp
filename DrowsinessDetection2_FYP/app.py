@@ -88,7 +88,7 @@ def detect_drowsiness_in_image(image: Image):
                 mouth_start_time = time.time()
             else:
                 duration = time.time() - mouth_start_time
-                if duration >= 2:  # Mouth open for 2 seconds
+                if duration >= 5:  # Mouth open for 2 seconds
                     mouth_open_detected = True
         else:
             mouth_start_time = None  # Reset timer if mouth is closed
