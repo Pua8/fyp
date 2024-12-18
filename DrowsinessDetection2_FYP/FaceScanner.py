@@ -7,7 +7,7 @@ import dlib
 import cv2
 import numpy as np
 from EAR import eye_aspect_ratio
-from MAR import mouth_aspect_ratio
+from MOR import mouth_opening_ratio
 from HeadPose import getHeadTiltAndCoords
 
 # Initialize dlib's face detector (HOG-based) and then create the
@@ -90,7 +90,7 @@ def process_eyes(frame, shape):
 def process_mouth(frame, shape):
     (mStart, mEnd) = (49, 68)
     mouth = shape[mStart:mEnd]
-    mar = mouth_aspect_ratio(mouth)
+    mor = mouth_opening_ratio(mouth)
     mouthHull = cv2.convexHull(mouth)
     cv2.drawContours(frame, [mouthHull], -1, (0, 255, 0), 1)
 
@@ -101,7 +101,7 @@ def capture_state(message, duration=10):
     end_time = time.time() + duration
 
     ear_values = []
-    mar_values = []
+    mor_values = []
 
     while time.time() < end_time:
         frame = vs.read()
@@ -118,9 +118,9 @@ def capture_state(message, duration=10):
             break
 
     avg_ear = np.mean(ear_values)
-    avg_mar = np.mean(mar_values)
+    avg_mor = np.mean(mor_values)
 
-    return avg_ear, avg_mar
+    return avg_ear, avg_mor
 
 
 def capture_thresholds():

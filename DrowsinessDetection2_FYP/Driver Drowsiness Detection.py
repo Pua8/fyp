@@ -10,7 +10,7 @@ import math
 import cv2
 import numpy as np
 from EAR import eye_aspect_ratio
-from MAR import mouth_aspect_ratio
+from MOR import mouth_opening_ratio
 from HeadPose import getHeadTiltAndCoords
 import os
 import pygame
@@ -135,13 +135,13 @@ def process_mouth(frame, shape):
 
     (mStart, mEnd) = (49, 68)
     mouth = shape[mStart:mEnd]
-    mar = mouth_aspect_ratio(mouth)
+    mor = mouth_opening_ratio(mouth)
 
     mouthHull = cv2.convexHull(mouth)
     cv2.drawContours(frame, [mouthHull], -1, (0, 255, 0), 1)
-    cv2.putText(frame, "MAR: {:.2f}".format(mar), (650, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+    cv2.putText(frame, "MOR: {:.2f}".format(mor), (650, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
-    if mar > MOUTH_AR_THRESH:
+    if mor > MOUTH_AR_THRESH:
         cv2.putText(frame, "Mouth Open!", (250, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
         if start_time_mouth is None:

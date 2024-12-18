@@ -8,7 +8,7 @@ import numpy as np
 import dlib
 from imutils import face_utils
 from EAR import eye_aspect_ratio
-from MAR import mouth_aspect_ratio
+from MOR import mouth_opening_ratio
 import time
 
 # Initialize the FastAPI app
@@ -77,13 +77,13 @@ def detect_drowsiness_in_image(image: Image):
         else:
             eye_start_time = None  # Reset timer if eyes are open
 
-        # Mouth Aspect Ratio (MAR) for yawning detection
+        # Mouth Opening Ratio (MOR) for yawning detection
         (mStart, mEnd) = (49, 68)  # Indices for mouth landmarks
         mouth = shape[mStart:mEnd]
-        mar = mouth_aspect_ratio(mouth)
+        mor = mouth_opening_ratio(mouth)
 
         # Detect if mouth is open for a certain duration
-        if mar > MOUTH_AR_THRESH:
+        if mor > MOUTH_AR_THRESH:
             if mouth_start_time is None:
                 mouth_start_time = time.time()
             else:
